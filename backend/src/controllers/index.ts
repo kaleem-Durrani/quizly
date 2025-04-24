@@ -3,7 +3,7 @@ import * as adminController from "./adminController";
 import * as studentController from "./studentController";
 import * as teacherController from "./teacherController";
 // import * as quizController from "./quizController";
-// import * as classController from "./classController";
+import * as classController from "./classController";
 // import * as questionController from "./questionController";
 // import * as submissionController from "./submissionController";
 
@@ -18,7 +18,7 @@ export {
   studentController,
   teacherController,
   //   quizController,
-  //   classController,
+  classController,
   //   questionController,
   //   submissionController,
 
