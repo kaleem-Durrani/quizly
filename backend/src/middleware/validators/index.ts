@@ -40,6 +40,11 @@ export * from "./questionValidators";
 export * from "./submissionValidators";
 export * from "./adminValidators";
 export * from "./paginationValidators";
+export * from "./subjectValidators";
+
+// Re-export with explicit names to resolve conflicts
+export { joinClassValidator as studentJoinClassValidator } from "./studentValidators";
+export { updateClassValidator as teacherUpdateClassValidator } from "./teacherValidators";
 
 // Temporary compatibility exports
 export {

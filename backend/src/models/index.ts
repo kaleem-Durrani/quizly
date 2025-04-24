@@ -6,6 +6,7 @@ import RefreshToken from "./RefreshToken";
 import Student from "./Student";
 import Teacher from "./Teacher";
 import Class from "./Class";
+import Subject from "./Subject";
 
 export {
   Admin,
@@ -16,4 +17,5 @@ export {
   Student,
   Teacher,
   Class,
+  Subject,
 };

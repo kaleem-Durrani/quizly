@@ -2,10 +2,11 @@
 import * as adminController from "./adminController";
 import * as studentController from "./studentController";
 import * as teacherController from "./teacherController";
-// import * as quizController from "./quizController";
+import * as quizController from "./quizController";
 import * as classController from "./classController";
-// import * as questionController from "./questionController";
+import * as questionController from "./questionController";
 // import * as submissionController from "./submissionController";
+import * as subjectController from "./subjectController";
 
 // Auth controllers
 import * as authAdminController from "./authAdminController";
@@ -17,10 +18,11 @@ export {
   adminController,
   studentController,
   teacherController,
-  //   quizController,
+  quizController,
   classController,
-  //   questionController,
+  questionController,
   //   submissionController,
+  subjectController,
 
   // Auth controllers
   authAdminController,

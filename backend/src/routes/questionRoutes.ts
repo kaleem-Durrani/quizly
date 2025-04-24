@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express from "express";
 import {
   createQuestionValidator,
   updateQuestionValidator,
@@ -6,7 +6,8 @@ import {
   paginationWithSearchValidator,
 } from "../middleware/validators";
 import { protect, restrictTo } from "../middleware/auth";
-import { UserRole, APIResponse } from "../constants";
+import { UserRole } from "../constants";
+import { questionController } from "../controllers";
 
 const router = express.Router();
 
@@ -21,13 +22,7 @@ router.post(
   "/",
   createQuestionValidator,
   validateRequest,
-  (req: Request, res: Response) => {
-    const response: APIResponse = {
-      success: true,
-      message: "Create question route",
-    };
-    res.json(response);
-  }
+  questionController.createQuestion
 );
 
 // @route   GET /api/questions
@@ -37,36 +32,13 @@ router.get(
   "/",
   paginationWithSearchValidator,
   validateRequest,
-  (req: Request, res: Response) => {
-    const quizId = req.query.quizId;
-    const page = req.query.page || 1;
-    const limit = req.query.limit || 10;
-    const response: APIResponse = {
-      success: true,
-      message: quizId
-        ? `Get questions for quiz: ${quizId}`
-        : "Get all questions",
-      pagination: {
-        page: Number(page),
-        limit: Number(limit),
-        total: 0, // Would be populated with actual count in a real implementation
-        pages: 0, // Would be calculated based on total/limit
-      },
-    };
-    res.json(response);
-  }
+  questionController.getQuestions
 );
 
 // @route   GET /api/questions/:id
 // @desc    Get question by ID
 // @access  Private/Teacher
-router.get("/:id", (req: Request, res: Response) => {
-  const response: APIResponse = {
-    success: true,
-    message: `Get question route for ID: ${req.params.id}`,
-  };
-  res.json(response);
-});
+router.get("/:id", questionController.getQuestionById);
 
 // @route   PUT /api/questions/:id
 // @desc    Update question
@@ -75,35 +47,17 @@ router.put(
   "/:id",
   updateQuestionValidator,
   validateRequest,
-  (req: Request, res: Response) => {
-    const response: APIResponse = {
-      success: true,
-      message: `Update question route for ID: ${req.params.id}`,
-    };
-    res.json(response);
-  }
+  questionController.updateQuestion
 );
 
 // @route   DELETE /api/questions/:id
 // @desc    Delete question
 // @access  Private/Teacher
-router.delete("/:id", (req: Request, res: Response) => {
-  const response: APIResponse = {
-    success: true,
-    message: `Delete question route for ID: ${req.params.id}`,
-  };
-  res.json(response);
-});
+router.delete("/:id", questionController.deleteQuestion);
 
 // @route   PUT /api/questions/reorder
 // @desc    Reorder questions
 // @access  Private/Teacher
-router.put("/reorder", (req: Request, res: Response) => {
-  const response: APIResponse = {
-    success: true,
-    message: "Reorder questions route",
-  };
-  res.json(response);
-});
+router.put("/reorder", questionController.reorderQuestions);
 
 export default router;

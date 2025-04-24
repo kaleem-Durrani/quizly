@@ -6,6 +6,7 @@ import adminRoutes from "./adminRoutes";
 import studentRoutes from "./studentRoutes";
 import teacherRoutes from "./teacherRoutes";
 import classRoutes from "./classRoutes";
+import subjectRoutes from "./subjectRoutes";
 
 // Auth routes
 import adminAuthRoutes from "./adminAuthRoutes";
@@ -22,6 +23,7 @@ router.use("/quizzes", quizRoutes);
 router.use("/questions", questionRoutes);
 router.use("/submissions", submissionRoutes);
 router.use("/admin", adminRoutes);
+router.use("/subjects", subjectRoutes);
 
 // Auth routes
 router.use("/admin/auth", adminAuthRoutes);

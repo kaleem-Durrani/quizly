@@ -7,43 +7,12 @@ import {
 } from "../middleware/validators";
 import { protect, restrictTo } from "../middleware/auth";
 import { UserRole } from "../constants";
-// import * as quizController from "../controllers/quizController";
+import { quizController } from "../controllers";
 
 const router = express.Router();
 
 // Apply authentication to all quiz routes
 router.use(protect);
-
-// Placeholder controller methods - these would be implemented or imported in a real application
-const quizController = {
-  createQuiz: (req: express.Request, res: express.Response) => {
-    res.json({ message: "Create quiz endpoint placeholder" });
-  },
-  getTeacherQuizzes: (req: express.Request, res: express.Response) => {
-    res.json({ message: "Get teacher quizzes endpoint placeholder" });
-  },
-  getStudentQuizzes: (req: express.Request, res: express.Response) => {
-    res.json({ message: "Get student quizzes endpoint placeholder" });
-  },
-  getQuizById: (req: express.Request, res: express.Response) => {
-    res.json({ message: "Get quiz by ID endpoint placeholder" });
-  },
-  updateQuiz: (req: express.Request, res: express.Response) => {
-    res.json({ message: "Update quiz endpoint placeholder" });
-  },
-  deleteQuiz: (req: express.Request, res: express.Response) => {
-    res.json({ message: "Delete quiz endpoint placeholder" });
-  },
-  publishQuiz: (req: express.Request, res: express.Response) => {
-    res.json({ message: "Publish quiz endpoint placeholder" });
-  },
-  getQuizSubmissions: (req: express.Request, res: express.Response) => {
-    res.json({ message: "Get quiz submissions endpoint placeholder" });
-  },
-  startQuizAttempt: (req: express.Request, res: express.Response) => {
-    res.json({ message: "Start quiz attempt endpoint placeholder" });
-  },
-};
 
 // @route   POST /api/quizzes
 // @desc    Create a new quiz for a specific class
@@ -54,6 +23,15 @@ router.post(
   validateRequest,
   restrictTo(UserRole.TEACHER),
   quizController.createQuiz
+);
+
+// @route   POST /api/quizzes/with-questions
+// @desc    Create a new quiz with questions in one request
+// @access  Private/Teacher
+router.post(
+  "/with-questions",
+  restrictTo(UserRole.TEACHER),
+  quizController.createQuizWithQuestions
 );
 
 // @route   GET /api/quizzes
@@ -106,6 +84,15 @@ router.put(
   "/:id/publish",
   restrictTo(UserRole.TEACHER),
   quizController.publishQuiz
+);
+
+// @route   POST /api/quizzes/:id/questions/batch
+// @desc    Add multiple questions to a quiz in one request
+// @access  Private/Teacher (if quiz owner)
+router.post(
+  "/:id/questions/batch",
+  restrictTo(UserRole.TEACHER),
+  quizController.addQuestionsBatch
 );
 
 // @route   GET /api/quizzes/:id/submissions
