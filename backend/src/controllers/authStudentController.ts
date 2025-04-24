@@ -1,0 +1,339 @@
+import { Request, Response } from "express";
+import bcrypt from "bcryptjs";
+import mongoose from "mongoose";
+import { Student, RefreshToken } from "../models";
+import { UserRole } from "../constants";
+import {
+  generateTokens,
+  saveRefreshToken,
+  refreshTokens,
+  revokeRefreshToken,
+  revokeAllUserTokens,
+} from "../utils/tokenUtils";
+import { withTransaction } from "../utils/transactionUtils";
+import asyncHandler from "../utils/asyncHandler";
+import {
+  AuthenticationError,
+  BadRequestError,
+  NotFoundError,
+} from "../utils/customErrors";
+import { Types } from "mongoose";
+
+/**
+ * Register a new student
+ * @route POST /api/auth/students/register
+ */
+export const registerStudent = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { username, email, password, firstName, lastName } = req.body;
+
+    // Check if student already exists
+    const userExists = await Student.findOne({
+      $or: [{ email }, { username }],
+    });
+    if (userExists) {
+      throw new BadRequestError("Student already exists");
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Generate OTP for email verification
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = new Date();
+    otpExpiry.setHours(otpExpiry.getHours() + 1); // OTP valid for 1 hour
+
+    // Use the transaction utility to handle the transaction
+    const result = await withTransaction(async (session) => {
+      // Create student
+      const student = await Student.create([{
+        username,
+        email,
+        password: hashedPassword,
+        firstName,
+        lastName,
+        role: UserRole.STUDENT,
+        isVerified: false,
+        verificationOTP: otp,
+        otpExpiry,
+      }], { session });
+
+      if (!student || student.length === 0) {
+        throw new BadRequestError("Invalid student data");
+      }
+
+      const createdStudent = student[0];
+      const userId = createdStudent._id as Types.ObjectId;
+
+      // Generate tokens
+      const tokens = generateTokens({
+        _id: userId.toString(),
+        role: createdStudent.role,
+      });
+
+      // Save refresh token to database
+      await saveRefreshToken(tokens.refreshToken, userId.toString(), false, session);
+
+      return {
+        student: createdStudent,
+        tokens
+      };
+    });
+
+    res.status(201).json({
+      success: true,
+      data: {
+        _id: result.student._id,
+        username: result.student.username,
+        email: result.student.email,
+        role: result.student.role,
+        firstName: result.student.firstName,
+        lastName: result.student.lastName,
+        isVerified: result.student.isVerified,
+        ...result.tokens,
+        otp, // In production, don't send this in the response
+      },
+    });
+  }
+);
+
+/**
+ * Login for student users
+ * @route POST /api/auth/students/login
+ */
+export const loginStudent = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { email, password } = req.body;
+
+    // Find student by email
+    const student = await Student.findOne({ email });
+    if (!student) {
+      throw new NotFoundError("Student not found");
+    }
+
+    // Check password
+    const isMatch = await bcrypt.compare(password, student.password);
+    if (!isMatch) {
+      throw new AuthenticationError("Invalid credentials");
+    }
+
+    // Check if student is verified
+    if (!student.isVerified) {
+      throw new AuthenticationError(
+        "Email not verified. Please verify your email."
+      );
+    }
+
+    const userId = student._id as Types.ObjectId;
+
+    // Generate tokens
+    const tokens = generateTokens({
+      _id: userId.toString(),
+      role: student.role,
+    });
+
+    // Use a transaction to ensure the operation is atomic
+    const session = await mongoose.startSession();
+    try {
+      session.startTransaction();
+
+      // Save refresh token to database
+      await saveRefreshToken(tokens.refreshToken, userId.toString(), false, session);
+
+      // Commit the transaction
+      await session.commitTransaction();
+
+      res.json({
+        success: true,
+        data: {
+          _id: student._id,
+          username: student.username,
+          email: student.email,
+          role: student.role,
+          firstName: student.firstName,
+          lastName: student.lastName,
+          ...tokens,
+        },
+      });
+    } catch (error) {
+      // Abort the transaction on error
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      // End the session
+      session.endSession();
+    }
+  }
+);
+
+/**
+ * Refresh student access token
+ * @route POST /api/auth/students/refresh
+ */
+export const refreshAccessToken = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      throw new BadRequestError("Refresh token is required");
+    }
+
+    // Get student from middleware
+    const student = req.user;
+    if (!student) {
+      throw new AuthenticationError("Student not found");
+    }
+
+    const userId = student._id as Types.ObjectId;
+
+    // Generate new tokens
+    const newTokens = refreshTokens(refreshToken);
+    if (!newTokens) {
+      throw new AuthenticationError("Invalid refresh token");
+    }
+
+    // Use the transaction utility to handle the transaction
+    await withTransaction(async (session) => {
+      // Revoke old refresh token
+      await revokeRefreshToken(refreshToken, session);
+
+      // Save new refresh token
+      await saveRefreshToken(newTokens.refreshToken, userId.toString(), false, session);
+    });
+
+    res.json({
+      success: true,
+      data: newTokens,
+    });
+  }
+);
+
+/**
+ * Logout student
+ * @route POST /api/auth/students/logout
+ */
+export const logout = asyncHandler(async (req: Request, res: Response) => {
+  const { refreshToken } = req.body;
+
+  if (refreshToken) {
+    // Use the transaction utility to handle the transaction
+    await withTransaction(async (session) => {
+      // Revoke the refresh token
+      await revokeRefreshToken(refreshToken, session);
+    });
+  }
+
+  res.json({
+    success: true,
+    message: "Logged out successfully",
+  });
+});
+
+/**
+ * Logout from all devices
+ * @route POST /api/auth/students/logout-all
+ */
+export const logoutFromAllDevices = asyncHandler(
+  async (req: Request, res: Response) => {
+    // Get student from middleware
+    const student = req.user;
+    if (!student) {
+      throw new NotFoundError("Student not found");
+    }
+
+    // Use the transaction utility to handle the transaction
+    await withTransaction(async (session) => {
+      // Revoke all refresh tokens for the student
+      await revokeAllUserTokens(student._id.toString(), false, session);
+    });
+
+    res.json({
+      success: true,
+      message: "Logged out from all devices",
+    });
+  }
+);
+
+/**
+ * Verify student email with OTP
+ * @route POST /api/auth/students/verify-email
+ */
+export const verifyStudentEmail = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { email, otp } = req.body;
+
+    // Find student by email
+    const student = await Student.findOne({ email });
+    if (!student) {
+      throw new NotFoundError("Student not found");
+    }
+
+    // Check if OTP exists and is valid
+    if (!student.verificationOTP || student.verificationOTP !== otp) {
+      throw new BadRequestError("Invalid OTP");
+    }
+
+    // Check if OTP has expired
+    if (student.otpExpiry && student.otpExpiry < new Date()) {
+      throw new BadRequestError("OTP has expired");
+    }
+
+    // Use the transaction utility to handle the transaction
+    await withTransaction(async (session) => {
+      // Verify student account
+      student.isVerified = true;
+      student.verificationOTP = undefined;
+      student.otpExpiry = undefined;
+      await student.save({ session });
+    });
+
+    res.json({
+      success: true,
+      message: "Email verified successfully",
+    });
+  }
+);
+
+/**
+ * Resend verification OTP
+ * @route POST /api/auth/students/resend-otp
+ */
+export const resendVerificationOTP = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { email } = req.body;
+
+    // Find student by email
+    const student = await Student.findOne({ email });
+    if (!student) {
+      throw new NotFoundError("Student not found");
+    }
+
+    // Check if already verified
+    if (student.isVerified) {
+      throw new BadRequestError("Email already verified");
+    }
+
+    // Generate new OTP (in a real app, this would be a random code)
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = new Date();
+    otpExpiry.setHours(otpExpiry.getHours() + 1); // OTP valid for 1 hour
+
+    // Use the transaction utility to handle the transaction
+    await withTransaction(async (session) => {
+      // Save OTP and expiry
+      student.verificationOTP = otp;
+      student.otpExpiry = otpExpiry;
+      await student.save({ session });
+    });
+
+    // In a real app, send OTP to student's email
+    // For now, we'll just return it in the response
+    res.json({
+      success: true,
+      message: "Verification OTP sent",
+      data: {
+        otp, // In production, don't send this in the response
+      },
+    });
+  }
+);

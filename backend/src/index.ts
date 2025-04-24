@@ -1,0 +1,38 @@
+import express, { Request, Response } from "express";
+import dotenv from "dotenv";
+import cors from "cors";
+import connectDB from "./config/db";
+import routes from "./routes";
+import { errorHandler, notFound } from "./middleware/errorMiddleware";
+
+// Load environment variables
+dotenv.config();
+
+// Connect to database
+connectDB();
+
+const app = express();
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// API Routes
+app.use("/api", routes);
+
+// Basic route
+app.get("/", (req: Request, res: Response) => {
+  res.send("Quizly API is running");
+});
+
+// Error Handling
+app.use(notFound);
+app.use(errorHandler);
+
+// Define port
+const PORT = process.env.PORT || 4000;
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+});
