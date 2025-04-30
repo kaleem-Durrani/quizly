@@ -345,7 +345,16 @@ export const resendVerificationOTP = asyncHandler(
       throw new BadRequestError("Email already verified");
     }
 
-    // Generate new OTP (in a real app, this would be a random code)
+    // Check if there's an existing non-expired OTP
+    const now = new Date();
+    if (student.otpExpiry && student.otpExpiry > now) {
+      const timeRemaining = Math.ceil((student.otpExpiry.getTime() - now.getTime()) / (1000 * 60));
+      throw new BadRequestError(
+        `Please wait for the current OTP to expire. Try again in ${timeRemaining} minutes.`
+      );
+    }
+
+    // Generate new OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpiry = new Date();
     otpExpiry.setHours(otpExpiry.getHours() + 1); // OTP valid for 1 hour
@@ -399,6 +408,15 @@ export const forgotPassword = asyncHandler(
     // Check if student is verified
     if (!student.isVerified) {
       throw new BadRequestError("Account not verified. Please verify your email first.");
+    }
+
+    // Check if there's an existing non-expired OTP
+    const now = new Date();
+    if (student.otpExpiry && student.otpExpiry > now) {
+      const timeRemaining = Math.ceil((student.otpExpiry.getTime() - now.getTime()) / (1000 * 60));
+      throw new BadRequestError(
+        `Please wait for the current OTP to expire. Try again in ${timeRemaining} minutes.`
+      );
     }
 
     // Generate reset OTP

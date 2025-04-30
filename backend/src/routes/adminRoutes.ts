@@ -62,6 +62,17 @@ router.get(
   adminController.getTeachers
 );
 
+// @route   POST /api/admin/teachers
+// @desc    Create a new teacher account
+// @access  Private/Admin
+router.post(
+  "/teachers",
+  protectAdmin,
+  adminValidators.createTeacherValidator,
+  validateRequest,
+  adminController.createTeacher
+);
+
 // @route   PUT /api/admin/teachers/:id
 // @desc    Update a teacher (admin only)
 // @access  Private/Admin
@@ -83,6 +94,43 @@ router.delete(
   validateRequest,
   adminController.deleteTeacher
 );
+
+// @route   POST /api/admin/teachers/:id/reset-password
+// @desc    Reset a teacher's password
+// @access  Private/Admin
+router.post(
+  "/teachers/:id/reset-password",
+  protectAdmin,
+  adminValidators.resetTeacherPasswordValidator,
+  validateRequest,
+  adminController.resetTeacherPassword
+);
+
+// ADMIN ROUTES
+
+// @route   POST /api/admin/admins
+// @desc    Create a new admin account
+// @access  Private/Admin
+router.post(
+  "/admins",
+  protectAdmin,
+  adminValidators.createAdminValidator,
+  validateRequest,
+  adminController.createAdmin
+);
+
+// @route   POST /api/admin/change-password
+// @desc    Change admin password
+// @access  Private/Admin
+router.post(
+  "/change-password",
+  protectAdmin,
+  adminValidators.changePasswordValidator,
+  validateRequest,
+  adminController.changeAdminPassword
+);
+
+// QUIZ ROUTES
 
 // @route   GET /api/admin/quizzes
 // @desc    Get all quizzes for admin
