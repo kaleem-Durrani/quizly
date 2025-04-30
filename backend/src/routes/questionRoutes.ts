@@ -1,6 +1,5 @@
 import express from "express";
 import {
-  createQuestionValidator,
   updateQuestionValidator,
   validateRequest,
   paginationWithSearchValidator,
@@ -15,15 +14,8 @@ const router = express.Router();
 router.use(protect);
 router.use(restrictTo(UserRole.TEACHER));
 
-// @route   POST /api/questions
-// @desc    Create a new question
-// @access  Private/Teacher
-router.post(
-  "/",
-  createQuestionValidator,
-  validateRequest,
-  questionController.createQuestion
-);
+// Note: Single question creation is handled by the batch question API
+// Use /api/quizzes/:id/questions/batch with a single question in the array
 
 // @route   GET /api/questions
 // @desc    Get all questions (optionally filtered by quizId)

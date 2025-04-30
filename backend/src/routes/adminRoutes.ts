@@ -1,11 +1,8 @@
 import express from "express";
 import {
   validateRequest,
-  updateStudentValidator,
-  updateTeacherValidator,
-  deleteStudentValidator,
-  deleteTeacherValidator,
   paginationWithSearchValidator,
+  adminValidators,
 } from "../middleware/validators";
 import { protectAdmin } from "../middleware/auth";
 import { adminController } from "../controllers";
@@ -36,7 +33,7 @@ router.get(
 router.put(
   "/students/:id",
   protectAdmin,
-  updateStudentValidator,
+  adminValidators.updateStudentValidator,
   validateRequest,
   adminController.updateStudent
 );
@@ -47,7 +44,7 @@ router.put(
 router.delete(
   "/students/:id",
   protectAdmin,
-  deleteStudentValidator,
+  adminValidators.deleteStudentValidator,
   validateRequest,
   adminController.deleteStudent
 );
@@ -71,7 +68,7 @@ router.get(
 router.put(
   "/teachers/:id",
   protectAdmin,
-  updateTeacherValidator,
+  adminValidators.updateTeacherValidator,
   validateRequest,
   adminController.updateTeacher
 );
@@ -82,7 +79,7 @@ router.put(
 router.delete(
   "/teachers/:id",
   protectAdmin,
-  deleteTeacherValidator,
+  adminValidators.deleteTeacherValidator,
   validateRequest,
   adminController.deleteTeacher
 );

@@ -4,6 +4,8 @@ import {
   updateQuizValidator,
   validateRequest,
   paginationWithSearchValidator,
+  createQuizWithQuestionsValidator,
+  batchQuestionsValidator,
 } from "../middleware/validators";
 import { protect, restrictTo } from "../middleware/auth";
 import { UserRole } from "../constants";
@@ -31,6 +33,8 @@ router.post(
 router.post(
   "/with-questions",
   restrictTo(UserRole.TEACHER),
+  createQuizWithQuestionsValidator,
+  validateRequest,
   quizController.createQuizWithQuestions
 );
 
@@ -92,6 +96,8 @@ router.put(
 router.post(
   "/:id/questions/batch",
   restrictTo(UserRole.TEACHER),
+  batchQuestionsValidator,
+  validateRequest,
   quizController.addQuestionsBatch
 );
 

@@ -31,20 +31,64 @@ export const validateRequest = (
   next();
 };
 
-// Export all validators
-export * from "./studentValidators";
-export * from "./teacherValidators";
-export * from "./classValidators";
-export * from "./quizValidators";
-export * from "./questionValidators";
-export * from "./submissionValidators";
-export * from "./adminValidators";
-export * from "./paginationValidators";
-export * from "./subjectValidators";
+// Import all validators
+import * as studentValidators from "./studentValidators";
+import * as teacherValidators from "./teacherValidators";
+import * as classValidators from "./classValidators";
+import * as quizValidators from "./quizValidators";
+import * as questionValidators from "./questionValidators";
+import * as submissionValidators from "./submissionValidators";
+import * as adminValidators from "./adminValidators";
+import * as paginationValidators from "./paginationValidators";
+import * as subjectValidators from "./subjectValidators";
+import * as batchQuestionValidators from "./batchQuestionValidators";
 
-// Re-export with explicit names to resolve conflicts
-export { joinClassValidator as studentJoinClassValidator } from "./studentValidators";
-export { updateClassValidator as teacherUpdateClassValidator } from "./teacherValidators";
+// Export all validators with namespace to avoid conflicts
+export {
+  studentValidators,
+  teacherValidators,
+  classValidators,
+  quizValidators,
+  questionValidators,
+  submissionValidators,
+  adminValidators,
+  paginationValidators,
+  subjectValidators,
+  batchQuestionValidators,
+};
+
+// Export common validators directly for convenience
+export const {
+  createQuizValidator,
+  updateQuizValidator,
+} = quizValidators;
+
+export const {
+  createQuestionValidator,
+  updateQuestionValidator,
+} = questionValidators;
+
+export const {
+  createClassValidator,
+  updateClassValidator,
+  regenerateJoinCodeValidator,
+  removeStudentValidator,
+} = classValidators;
+
+export const {
+  createSubjectValidator,
+  updateSubjectValidator,
+} = subjectValidators;
+
+export const {
+  paginationValidator,
+  paginationWithSearchValidator,
+} = paginationValidators;
+
+export const {
+  batchQuestionsValidator,
+  createQuizWithQuestionsValidator,
+} = batchQuestionValidators;
 
 // Temporary compatibility exports
 export {

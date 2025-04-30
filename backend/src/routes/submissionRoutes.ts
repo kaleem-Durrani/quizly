@@ -1,14 +1,24 @@
 import express, { Request, Response } from "express";
 import {
-  createSubmissionValidator,
-  submitAnswerValidator,
-  completeSubmissionValidator,
-  gradeSubmissionValidator,
   validateRequest,
   paginationWithSearchValidator,
+  submissionValidators,
 } from "../middleware/validators";
 import { protect, restrictTo } from "../middleware/auth";
-import { UserRole, APIResponse } from "../constants";
+import { UserRole } from "../constants";
+
+// Define APIResponse type for this file
+interface APIResponse {
+  success: boolean;
+  message: string;
+  data?: any;
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
 
 const router = express.Router();
 
@@ -21,7 +31,7 @@ router.use(protect);
 router.post(
   "/",
   restrictTo(UserRole.STUDENT),
-  createSubmissionValidator,
+  submissionValidators.createSubmissionValidator,
   validateRequest,
   (req: Request, res: Response) => {
     const response: APIResponse = {
@@ -38,7 +48,7 @@ router.post(
 router.put(
   "/:id/answer",
   restrictTo(UserRole.STUDENT),
-  submitAnswerValidator,
+  submissionValidators.submitAnswerValidator,
   validateRequest,
   (req: Request, res: Response) => {
     const response: APIResponse = {
@@ -55,7 +65,7 @@ router.put(
 router.put(
   "/:id/complete",
   restrictTo(UserRole.STUDENT),
-  completeSubmissionValidator,
+  submissionValidators.completeSubmissionValidator,
   validateRequest,
   (req: Request, res: Response) => {
     const response: APIResponse = {
@@ -117,7 +127,7 @@ router.get("/:id", (req: Request, res: Response) => {
 router.put(
   "/:id/grade",
   restrictTo(UserRole.TEACHER),
-  gradeSubmissionValidator,
+  submissionValidators.gradeSubmissionValidator,
   validateRequest,
   (req: Request, res: Response) => {
     const response: APIResponse = {

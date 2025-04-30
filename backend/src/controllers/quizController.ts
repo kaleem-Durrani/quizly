@@ -113,10 +113,10 @@ export const createQuizWithQuestions = asyncHandler(async (req: Request, res: Re
 
       // Create questions
       const questions = await Question.create(questionsToCreate, { session });
-      
+
       return { quiz, questions };
     }
-    
+
     return { quiz, questions: [] };
   });
 
@@ -165,7 +165,7 @@ export const addQuestionsBatch = asyncHandler(async (req: Request, res: Response
   const highestOrderQuestion = await Question.findOne({ quizId: id })
     .sort({ orderIndex: -1 })
     .select('orderIndex');
-  
+
   const startOrderIndex = highestOrderQuestion ? highestOrderQuestion.orderIndex + 1 : 1;
 
   // Use transaction to add questions
@@ -275,12 +275,12 @@ export const getStudentQuizzes = asyncHandler(async (req: Request, res: Response
     if (!Types.ObjectId.isValid(classId as string)) {
       throw new BadRequestError("Invalid class ID format");
     }
-    
+
     // Check if student is enrolled in the specified class
     if (!student.classes.includes(classId as any)) {
       throw new ForbiddenError("You are not enrolled in this class");
     }
-    
+
     classQuery._id = classId;
   }
 
@@ -380,19 +380,19 @@ export const getQuizById = asyncHandler(async (req: Request, res: Response) => {
   } else if (user.role === UserRole.STUDENT) {
     // Students can only access published quizzes from classes they're enrolled in
     const classItem = await Class.findById(quiz.classId);
-    
+
     if (!classItem) {
       throw new NotFoundError("Class not found");
     }
-    
+
     if (!classItem.students.includes(user._id)) {
       throw new ForbiddenError("You are not enrolled in this class");
     }
-    
+
     if (!quiz.isPublished) {
       throw new ForbiddenError("This quiz is not available yet");
     }
-    
+
     // Check if quiz is currently available
     const now = new Date();
     if (
@@ -404,10 +404,10 @@ export const getQuizById = asyncHandler(async (req: Request, res: Response) => {
   }
 
   // Include questions if requested
-  let questions = [];
+  let questions: any[] = [];
   if (withQuestions === "true") {
     questions = await Question.find({ quizId: id }).sort({ orderIndex: 1 });
-    
+
     // For students, don't include correct answers for MCQ questions
     if (user.role === UserRole.STUDENT) {
       questions = questions.map(q => {
@@ -512,10 +512,10 @@ export const deleteQuiz = asyncHandler(async (req: Request, res: Response) => {
   await withTransaction(async (session) => {
     // Delete all questions for this quiz
     await Question.deleteMany({ quizId: id }, { session });
-    
+
     // Delete all submissions for this quiz
     await Submission.deleteMany({ quizId: id }, { session });
-    
+
     // Delete the quiz
     await Quiz.findByIdAndDelete(id, { session });
   });
@@ -556,7 +556,7 @@ export const publishQuiz = asyncHandler(async (req: Request, res: Response) => {
 
   // Check if quiz has questions
   const questionCount = await Question.countDocuments({ quizId: id });
-  
+
   if (questionCount === 0) {
     throw new BadRequestError("Cannot publish a quiz with no questions");
   }
@@ -672,11 +672,11 @@ export const startQuizAttempt = asyncHandler(async (req: Request, res: Response)
 
   // Check if student is enrolled in the class
   const classItem = await Class.findById(quiz.classId);
-  
+
   if (!classItem) {
     throw new NotFoundError("Class not found");
   }
-  
+
   if (!classItem.students.includes(student._id)) {
     throw new ForbiddenError("You are not enrolled in this class");
   }
@@ -709,7 +709,7 @@ export const startQuizAttempt = asyncHandler(async (req: Request, res: Response)
 
   // Get questions for the quiz
   const questions = await Question.find({ quizId: id }).sort({ orderIndex: 1 });
-  
+
   if (questions.length === 0) {
     throw new BadRequestError("This quiz has no questions");
   }

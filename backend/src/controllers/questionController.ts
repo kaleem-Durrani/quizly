@@ -6,66 +6,70 @@ import { NotFoundError, BadRequestError, ForbiddenError } from "../utils/customE
 import { withTransaction } from "../utils/transactionUtils";
 import { UserRole } from "../constants";
 
+
+// Note: Single question creation is handled by the batch question API
+// Use /api/quizzes/:id/questions/batch with a single question in the array
+
 /**
- * Create a new question
+ * Create a new question (deprecated)
  * @route POST /api/questions
  * @access Private/Teacher
  */
-export const createQuestion = asyncHandler(async (req: Request, res: Response) => {
-  const { quizId, questionText, questionType, options, sampleAnswer, points, orderIndex } = req.body;
-  const teacher = req.user;
+// export const createQuestion = asyncHandler(async (req: Request, res: Response) => {
+//   const { quizId, questionText, questionType, options, sampleAnswer, points, orderIndex } = req.body;
+//   const teacher = req.user;
 
-  if (!teacher) {
-    throw new NotFoundError("Teacher not found");
-  }
+//   if (!teacher) {
+//     throw new NotFoundError("Teacher not found");
+//   }
 
-  // Validate quiz ID
-  if (!Types.ObjectId.isValid(quizId)) {
-    throw new BadRequestError("Invalid quiz ID format");
-  }
+//   // Validate quiz ID
+//   if (!Types.ObjectId.isValid(quizId)) {
+//     throw new BadRequestError("Invalid quiz ID format");
+//   }
 
-  // Check if quiz exists and teacher is the owner
-  const quiz = await Quiz.findOne({
-    _id: quizId,
-    createdBy: teacher._id,
-  });
+//   // Check if quiz exists and teacher is the owner
+//   const quiz = await Quiz.findOne({
+//     _id: quizId,
+//     createdBy: teacher._id,
+//   });
 
-  if (!quiz) {
-    throw new NotFoundError("Quiz not found or you don't have permission");
-  }
+//   if (!quiz) {
+//     throw new NotFoundError("Quiz not found or you don't have permission");
+//   }
 
-  // Check if quiz is published
-  if (quiz.isPublished) {
-    throw new BadRequestError("Cannot add questions to a published quiz");
-  }
+//   // Check if quiz is published
+//   if (quiz.isPublished) {
+//     throw new BadRequestError("Cannot add questions to a published quiz");
+//   }
 
-  // If orderIndex is not provided, find the highest orderIndex and add 1
-  let newOrderIndex = orderIndex;
-  if (!newOrderIndex) {
-    const highestOrderQuestion = await Question.findOne({ quizId })
-      .sort({ orderIndex: -1 })
-      .select('orderIndex');
+//   // If orderIndex is not provided, find the highest orderIndex and add 1
+//   let newOrderIndex = orderIndex;
+//   if (!newOrderIndex) {
+//     const highestOrderQuestion = await Question.findOne({ quizId })
+//       .sort({ orderIndex: -1 })
+//       .select('orderIndex');
     
-    newOrderIndex = highestOrderQuestion ? highestOrderQuestion.orderIndex + 1 : 1;
-  }
+//     newOrderIndex = highestOrderQuestion ? highestOrderQuestion.orderIndex + 1 : 1;
+//   }
 
-  // Create new question
-  const question = await Question.create({
-    quizId,
-    questionText,
-    questionType,
-    options: questionType === 'mcq' ? options : undefined,
-    sampleAnswer: questionType === 'written' ? sampleAnswer : undefined,
-    points: points || 1,
-    orderIndex: newOrderIndex,
-  });
+//   // Create new question
+//   const question = await Question.create({
+//     quizId,
+//     questionText,
+//     questionType,
+//     options: questionType === 'mcq' ? options : undefined,
+//     sampleAnswer: questionType === 'written' ? sampleAnswer : undefined,
+//     points: points || 1,
+//     orderIndex: newOrderIndex,
+//   });
 
-  res.status(201).json({
-    success: true,
-    message: "Question created successfully",
-    data: question,
-  });
-});
+//   res.status(201).json({
+//     success: true,
+//     message: "Question created successfully",
+//     data: question,
+//   });
+// });
 
 /**
  * Get all questions (optionally filtered by quizId)

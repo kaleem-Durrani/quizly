@@ -24,4 +24,9 @@ const AdminSchema = new mongoose.Schema({
   lastLogin: Date,
 }, { timestamps: true });
 
+// Note: We don't need to add explicit indexes for email and username
+// as they are already defined as unique in the schema
+// Add other useful indexes
+AdminSchema.index({ role: 1 });
+
 export default mongoose.model<IAdmin>("Admin", AdminSchema);

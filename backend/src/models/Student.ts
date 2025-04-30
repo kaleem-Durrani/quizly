@@ -55,8 +55,9 @@ const StudentSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Indexes for faster lookups
-StudentSchema.index({ email: 1 });
-StudentSchema.index({ username: 1 });
+// Remove duplicate email and username indexes since they're already defined as unique in the schema
+// StudentSchema.index({ email: 1 });
+// StudentSchema.index({ username: 1 });
 StudentSchema.index({ isVerified: 1 });
 StudentSchema.index({ isBanned: 1 });
 // Index for querying students by class

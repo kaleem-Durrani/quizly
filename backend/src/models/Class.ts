@@ -4,6 +4,7 @@ import { ObjectId } from "../constants";
 export interface IClass extends Document {
   name: string;
   description?: string;
+  subject?: string;
   createdBy: ObjectId; // Teacher ID
   joinCode: string;
   joinCodeExpiry: Date;
@@ -19,6 +20,7 @@ const ClassSchema = new mongoose.Schema({
     required: true,
   },
   description: { type: String },
+  subject: { type: String },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Teacher",

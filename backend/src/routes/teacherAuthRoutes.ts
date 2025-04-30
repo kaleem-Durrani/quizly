@@ -1,8 +1,7 @@
 import express from "express";
 import {
-  loginValidator,
   validateRequest,
-  changePasswordValidator,
+  teacherValidators,
 } from "../middleware/validators";
 import { protect, restrictTo, verifyRefreshToken } from "../middleware/auth";
 import { UserRole } from "../constants";
@@ -15,7 +14,7 @@ const router = express.Router();
 // @access  Public
 router.post(
   "/login",
-  loginValidator,
+  teacherValidators.teacherLoginValidator,
   validateRequest,
   authTeacherController.loginTeacher
 );
@@ -25,7 +24,7 @@ router.post(
 // @access  Private/Teacher
 router.post(
   "/change-password",
-  changePasswordValidator,
+  teacherValidators.changePasswordValidator,
   validateRequest,
   protect,
   restrictTo(UserRole.TEACHER),

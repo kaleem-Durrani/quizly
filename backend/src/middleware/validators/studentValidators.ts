@@ -59,3 +59,29 @@ export const resendOtpValidator = [
 export const joinClassValidator = [
   body("joinCode").notEmpty().withMessage("Join code is required"),
 ];
+
+export const forgotPasswordValidator = [
+  body("email")
+    .notEmpty()
+    .withMessage("Email is required")
+    .isEmail()
+    .withMessage("Email is invalid"),
+];
+
+export const resetPasswordValidator = [
+  body("email")
+    .notEmpty()
+    .withMessage("Email is required")
+    .isEmail()
+    .withMessage("Email is invalid"),
+  body("otp")
+    .notEmpty()
+    .withMessage("OTP is required")
+    .isLength({ min: 6, max: 6 })
+    .withMessage("OTP must be 6 characters"),
+  body("newPassword")
+    .notEmpty()
+    .withMessage("New password is required")
+    .isLength({ min: 6 })
+    .withMessage("Password must be at least 6 characters"),
+];

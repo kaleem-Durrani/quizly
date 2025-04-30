@@ -60,4 +60,12 @@ router.delete(
   subjectController.deleteSubject
 );
 
+// @route   GET /api/subjects/select
+// @desc    Get subjects formatted for a select component
+// @access  Private
+router.get(
+  "/select",
+  subjectController.getSubjectsForSelect
+);
+
 export default router;

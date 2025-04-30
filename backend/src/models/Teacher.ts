@@ -40,8 +40,9 @@ const TeacherSchema = new mongoose.Schema({
 });
 
 // Indexes for faster lookups
-TeacherSchema.index({ email: 1 });
-TeacherSchema.index({ username: 1 });
+// Remove duplicate email and username indexes since they're already defined as unique in the schema
+// TeacherSchema.index({ email: 1 });
+// TeacherSchema.index({ username: 1 });
 TeacherSchema.index({ isBanned: 1 });
 TeacherSchema.index({ department: 1 });
 TeacherSchema.index({ createdBy: 1 });

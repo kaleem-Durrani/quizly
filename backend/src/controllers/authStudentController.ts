@@ -18,6 +18,11 @@ import {
   NotFoundError,
 } from "../utils/customErrors";
 import { Types } from "mongoose";
+import {
+  sendVerificationEmail,
+  sendWelcomeEmail,
+  sendPasswordResetEmail
+} from "../utils/emailUtils";
 
 /**
  * Register a new student
@@ -81,6 +86,20 @@ export const registerStudent = asyncHandler(
       };
     });
 
+    try {
+      // Send verification email with OTP
+      await sendVerificationEmail(
+        email,
+        otp,
+        firstName
+      );
+      console.log(`Verification email sent to ${email}`);
+    } catch (error) {
+      console.error('Failed to send verification email:', error);
+      // Continue with the response even if email fails
+      // In production, you might want to handle this differently
+    }
+
     res.status(201).json({
       success: true,
       data: {
@@ -92,7 +111,8 @@ export const registerStudent = asyncHandler(
         lastName: result.student.lastName,
         isVerified: result.student.isVerified,
         ...result.tokens,
-        otp, // In production, don't send this in the response
+        // Don't send OTP in production
+        ...(process.env.NODE_ENV === 'development' ? { otp } : {})
       },
     });
   }
@@ -287,6 +307,18 @@ export const verifyStudentEmail = asyncHandler(
       await student.save({ session });
     });
 
+    try {
+      // Send welcome email after successful verification
+      await sendWelcomeEmail(
+        email,
+        student.firstName
+      );
+      console.log(`Welcome email sent to ${email}`);
+    } catch (error) {
+      console.error('Failed to send welcome email:', error);
+      // Continue with the response even if email fails
+    }
+
     res.json({
       success: true,
       message: "Email verified successfully",
@@ -326,14 +358,130 @@ export const resendVerificationOTP = asyncHandler(
       await student.save({ session });
     });
 
-    // In a real app, send OTP to student's email
-    // For now, we'll just return it in the response
+    try {
+      // Send verification email with OTP
+      await sendVerificationEmail(
+        email,
+        otp,
+        student.firstName
+      );
+      console.log(`Verification email resent to ${email}`);
+    } catch (error) {
+      console.error('Failed to send verification email:', error);
+      // Continue with the response even if email fails
+    }
+
     res.json({
       success: true,
-      message: "Verification OTP sent",
+      message: "Verification OTP sent to your email",
       data: {
-        otp, // In production, don't send this in the response
+        // Only include OTP in development mode
+        ...(process.env.NODE_ENV === 'development' ? { otp } : {})
       },
+    });
+  }
+);
+
+/**
+ * Request password reset
+ * @route POST /api/auth/students/forgot-password
+ */
+export const forgotPassword = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { email } = req.body;
+
+    // Find student by email
+    const student = await Student.findOne({ email });
+    if (!student) {
+      throw new NotFoundError("Student not found");
+    }
+
+    // Check if student is verified
+    if (!student.isVerified) {
+      throw new BadRequestError("Account not verified. Please verify your email first.");
+    }
+
+    // Generate reset OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = new Date();
+    otpExpiry.setHours(otpExpiry.getHours() + 1); // OTP valid for 1 hour
+
+    // Use the transaction utility to handle the transaction
+    await withTransaction(async (session) => {
+      // Save OTP and expiry
+      student.verificationOTP = otp;
+      student.otpExpiry = otpExpiry;
+      await student.save({ session });
+    });
+
+    try {
+      // Send password reset email with OTP
+      await sendPasswordResetEmail(
+        email,
+        otp,
+        student.firstName
+      );
+      console.log(`Password reset email sent to ${email}`);
+    } catch (error) {
+      console.error('Failed to send password reset email:', error);
+      // Continue with the response even if email fails
+    }
+
+    res.json({
+      success: true,
+      message: "Password reset instructions sent to your email",
+      data: {
+        // Only include OTP in development mode
+        ...(process.env.NODE_ENV === 'development' ? { otp } : {})
+      },
+    });
+  }
+);
+
+/**
+ * Reset password with OTP
+ * @route POST /api/auth/students/reset-password
+ */
+export const resetPassword = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { email, otp, newPassword } = req.body;
+
+    // Find student by email
+    const student = await Student.findOne({ email });
+    if (!student) {
+      throw new NotFoundError("Student not found");
+    }
+
+    // Check if OTP exists and is valid
+    if (!student.verificationOTP || student.verificationOTP !== otp) {
+      throw new BadRequestError("Invalid OTP");
+    }
+
+    // Check if OTP has expired
+    if (student.otpExpiry && student.otpExpiry < new Date()) {
+      throw new BadRequestError("OTP has expired");
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Use the transaction utility to handle the transaction
+    await withTransaction(async (session) => {
+      // Update password and clear OTP
+      student.password = hashedPassword;
+      student.verificationOTP = undefined;
+      student.otpExpiry = undefined;
+      await student.save({ session });
+
+      // Revoke all refresh tokens for the student for security
+      const userId = student._id as Types.ObjectId;
+      await revokeAllUserTokens(userId.toString(), false, session);
+    });
+
+    res.json({
+      success: true,
+      message: "Password reset successful. Please login with your new password.",
     });
   }
 );

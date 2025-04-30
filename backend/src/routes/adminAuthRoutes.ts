@@ -1,7 +1,7 @@
 import express from "express";
 import {
-  adminLoginValidator,
   validateRequest,
+  adminValidators,
 } from "../middleware/validators";
 import { protectAdmin, verifyRefreshToken } from "../middleware/auth";
 import { authAdminController } from "../controllers";
@@ -13,7 +13,7 @@ const router = express.Router();
 // @access  Public
 router.post(
   "/login",
-  adminLoginValidator,
+  adminValidators.adminLoginValidator,
   validateRequest,
   authAdminController.loginAdmin
 );

@@ -2,7 +2,7 @@ import express from "express";
 import {
   validateRequest,
   paginationWithSearchValidator,
-  joinClassValidator,
+  studentValidators,
 } from "../middleware/validators";
 import { protect, restrictTo } from "../middleware/auth";
 import { UserRole } from "../constants";
@@ -37,7 +37,7 @@ router.post(
   "/join-class",
   protect,
   restrictTo(UserRole.STUDENT),
-  joinClassValidator,
+  studentValidators.joinClassValidator,
   validateRequest,
   studentController.joinClass
 );

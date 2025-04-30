@@ -1,10 +1,7 @@
 import express from "express";
 import {
-  registerValidator,
-  loginValidator,
   validateRequest,
-  verifyEmailValidator,
-  resendOtpValidator,
+  studentValidators,
 } from "../middleware/validators";
 import { protect, verifyRefreshToken } from "../middleware/auth";
 import { authStudentController } from "../controllers";
@@ -16,7 +13,7 @@ const router = express.Router();
 // @access  Public
 router.post(
   "/register",
-  registerValidator,
+  studentValidators.studentRegisterValidator,
   validateRequest,
   authStudentController.registerStudent
 );
@@ -26,7 +23,7 @@ router.post(
 // @access  Public
 router.post(
   "/login",
-  loginValidator,
+  studentValidators.studentLoginValidator,
   validateRequest,
   authStudentController.loginStudent
 );
@@ -36,7 +33,7 @@ router.post(
 // @access  Public
 router.post(
   "/verify-email",
-  verifyEmailValidator,
+  studentValidators.verifyEmailValidator,
   validateRequest,
   authStudentController.verifyStudentEmail
 );
@@ -46,7 +43,7 @@ router.post(
 // @access  Public
 router.post(
   "/resend-otp",
-  resendOtpValidator,
+  studentValidators.resendOtpValidator,
   validateRequest,
   authStudentController.resendVerificationOTP
 );
@@ -65,5 +62,25 @@ router.post("/logout", authStudentController.logout);
 // @desc    Logout from all devices
 // @access  Private
 router.post("/logout-all", protect, authStudentController.logoutFromAllDevices);
+
+// @route   POST /api/students/auth/forgot-password
+// @desc    Request password reset
+// @access  Public
+router.post(
+  "/forgot-password",
+  studentValidators.forgotPasswordValidator,
+  validateRequest,
+  authStudentController.forgotPassword
+);
+
+// @route   POST /api/students/auth/reset-password
+// @desc    Reset password with OTP
+// @access  Public
+router.post(
+  "/reset-password",
+  studentValidators.resetPasswordValidator,
+  validateRequest,
+  authStudentController.resetPassword
+);
 
 export default router;
