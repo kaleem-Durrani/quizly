@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
-import mongoose from "mongoose";
-import { Admin, RefreshToken } from "../models";
+import { Types } from "mongoose";
+import { Admin } from "../models";
 import { UserRole } from "../constants";
 import {
   generateTokens,
@@ -9,6 +9,8 @@ import {
   refreshTokens,
   revokeRefreshToken,
   revokeAllUserTokens,
+  setTokenCookies,
+  clearTokenCookies,
 } from "../utils/tokenUtils";
 import { withTransaction } from "../utils/transactionUtils";
 import asyncHandler from "../utils/asyncHandler";
@@ -17,7 +19,6 @@ import {
   BadRequestError,
   NotFoundError,
 } from "../utils/customErrors";
-import { Types } from "mongoose";
 
 /**
  * Login for admin users
@@ -52,6 +53,9 @@ export const loginAdmin = asyncHandler(async (req: Request, res: Response) => {
     await saveRefreshToken(tokens.refreshToken, adminId.toString(), true, session);
   });
 
+  // Set tokens as HTTP-only cookies
+  setTokenCookies(res, tokens);
+
   res.json({
     success: true,
     data: {
@@ -59,7 +63,6 @@ export const loginAdmin = asyncHandler(async (req: Request, res: Response) => {
       username: admin.username,
       email: admin.email,
       role: admin.role,
-      ...tokens,
     },
   });
 });
@@ -70,7 +73,8 @@ export const loginAdmin = asyncHandler(async (req: Request, res: Response) => {
  */
 export const refreshAccessToken = asyncHandler(
   async (req: Request, res: Response) => {
-    const { refreshToken } = req.body;
+    // Get refresh token from cookies
+    const refreshToken = req.cookies.refreshToken;
     if (!refreshToken) {
       throw new BadRequestError("Refresh token is required");
     }
@@ -98,9 +102,12 @@ export const refreshAccessToken = asyncHandler(
       await saveRefreshToken(newTokens.refreshToken, adminId.toString(), true, session);
     });
 
+    // Set new tokens as HTTP-only cookies
+    setTokenCookies(res, newTokens);
+
     res.json({
       success: true,
-      data: newTokens,
+      message: "Token refreshed successfully",
     });
   }
 );
@@ -110,7 +117,8 @@ export const refreshAccessToken = asyncHandler(
  * @route POST /api/auth/admin/logout
  */
 export const logout = asyncHandler(async (req: Request, res: Response) => {
-  const { refreshToken } = req.body;
+  // Get refresh token from cookies
+  const refreshToken = req.cookies.refreshToken;
 
   if (refreshToken) {
     // Use the transaction utility to handle the transaction
@@ -119,6 +127,9 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
       await revokeRefreshToken(refreshToken, session);
     });
   }
+
+  // Clear token cookies
+  clearTokenCookies(res);
 
   res.json({
     success: true,
@@ -143,6 +154,9 @@ export const logoutFromAllDevices = asyncHandler(
       // Revoke all refresh tokens for the admin
       await revokeAllUserTokens(admin._id.toString(), true, session);
     });
+
+    // Clear token cookies
+    clearTokenCookies(res);
 
     res.json({
       success: true,

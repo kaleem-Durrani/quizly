@@ -1,6 +1,7 @@
 import express, { Request, Response } from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import connectDB from "./config/db";
 import routes from "./routes";
 import { errorHandler, notFound } from "./middleware/errorMiddleware";
@@ -14,8 +15,12 @@ connectDB();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true // Allow cookies to be sent with requests
+}));
 app.use(express.json());
+app.use(cookieParser());
 
 // API Routes
 app.use("/api", routes);

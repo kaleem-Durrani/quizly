@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import mongoose, { Types } from "mongoose";
+import { Response } from "express";
 import { RefreshToken } from "../models";
 import {
   UserRole,
@@ -214,4 +215,73 @@ export const verifyToken = (
   } catch (error) {
     return null;
   }
+};
+
+/**
+ * Set tokens as HTTP-only cookies
+ * @param res Express response object
+ * @param tokens Access and refresh tokens
+ */
+export const setTokenCookies = (res: Response, tokens: Tokens): void => {
+  // Parse the expiration format for access token
+  const accessExpire = process.env.JWT_ACCESS_EXPIRE || "15m";
+  const accessValue = parseInt(accessExpire);
+  const accessUnit = accessExpire.slice(String(accessValue).length);
+
+  // Calculate access token expiry in milliseconds
+  let accessExpireMs = 15 * 60 * 1000; // Default 15 minutes
+  switch (accessUnit) {
+    case "d": // days
+      accessExpireMs = accessValue * 24 * 60 * 60 * 1000;
+      break;
+    case "h": // hours
+      accessExpireMs = accessValue * 60 * 60 * 1000;
+      break;
+    case "m": // minutes
+      accessExpireMs = accessValue * 60 * 1000;
+      break;
+    case "s": // seconds
+      accessExpireMs = accessValue * 1000;
+      break;
+  }
+
+  // Calculate refresh token expiry in milliseconds
+  const refreshExpireSeconds = calculateRefreshExpiration();
+  const refreshExpireMs = refreshExpireSeconds * 1000;
+
+  // Set access token cookie
+  res.cookie("accessToken", tokens.accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // Use secure in production
+    sameSite: "strict",
+    maxAge: accessExpireMs,
+  });
+
+  // Set refresh token cookie
+  res.cookie("refreshToken", tokens.refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // Use secure in production
+    sameSite: "strict",
+    maxAge: refreshExpireMs,
+  });
+};
+
+/**
+ * Clear token cookies
+ * @param res Express response object
+ */
+export const clearTokenCookies = (res: Response): void => {
+  res.cookie("accessToken", "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    expires: new Date(0),
+  });
+
+  res.cookie("refreshToken", "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    expires: new Date(0),
+  });
 };

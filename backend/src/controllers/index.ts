@@ -12,6 +12,7 @@ import * as subjectController from "./subjectController";
 import * as authAdminController from "./authAdminController";
 import * as authTeacherController from "./authTeacherController";
 import * as authStudentController from "./authStudentController";
+import * as authController from "./authController";
 
 export {
   // Normal controllers
@@ -25,6 +26,7 @@ export {
   subjectController,
 
   // Auth controllers
+  authController,
   authAdminController,
   authTeacherController,
   authStudentController,

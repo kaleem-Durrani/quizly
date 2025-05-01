@@ -12,6 +12,7 @@ import subjectRoutes from "./subjectRoutes";
 import adminAuthRoutes from "./adminAuthRoutes";
 import studentAuthRoutes from "./studentAuthRoutes";
 import teacherAuthRoutes from "./teacherAuthRoutes";
+import authRoutes from "./authRoutes";
 
 const router = express.Router();
 
@@ -26,6 +27,7 @@ router.use("/admin", adminRoutes);
 router.use("/subjects", subjectRoutes);
 
 // Auth routes
+router.use("/auth", authRoutes);
 router.use("/admin/auth", adminAuthRoutes);
 router.use("/students/auth", studentAuthRoutes);
 router.use("/teachers/auth", teacherAuthRoutes);

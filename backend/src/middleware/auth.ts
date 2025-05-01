@@ -10,6 +10,9 @@ import {
 } from "../utils/customErrors";
 import asyncHandler from "../utils/asyncHandler";
 
+// Get JWT secrets from environment variables
+const REFRESH_TOKEN_SECRET = process.env.JWT_REFRESH_SECRET || "refresh_secret";
+
 // Extend Express Request interface to include user
 declare global {
   namespace Express {
@@ -26,41 +29,46 @@ export const protect = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     let token;
 
-    // Check for token in headers
-    if (
+    // Check for token in cookies first
+    if (req.cookies.accessToken) {
+      token = req.cookies.accessToken;
+    }
+    // Fallback to Authorization header for API clients
+    else if (
       req.headers.authorization &&
       req.headers.authorization.startsWith("Bearer")
     ) {
-      // Get token from header
       token = req.headers.authorization.split(" ")[1];
+    }
 
-      // Verify token
-      const decoded = verifyToken(token);
-
-      if (!decoded) {
-        throw new AuthenticationError("Not authorized, token invalid");
-      }
-
-      // Find user by id based on role
-      let user;
-      if (decoded.role === UserRole.STUDENT) {
-        user = await Student.findById(decoded.id).select("-password");
-      } else if (decoded.role === UserRole.TEACHER) {
-        user = await Teacher.findById(decoded.id).select("-password");
-      } else {
-        throw new AuthenticationError("Invalid user role");
-      }
-
-      if (!user) {
-        throw new AuthenticationError("Not authorized, user not found");
-      }
-
-      // Set user on request
-      req.user = user;
-      next();
-    } else {
+    if (!token) {
       throw new AuthenticationError("Not authorized, no token");
     }
+
+    // Verify token
+    const decoded = verifyToken(token);
+
+    if (!decoded) {
+      throw new AuthenticationError("Not authorized, token invalid");
+    }
+
+    // Find user by id based on role
+    let user;
+    if (decoded.role === UserRole.STUDENT) {
+      user = await Student.findById(decoded.id).select("-password");
+    } else if (decoded.role === UserRole.TEACHER) {
+      user = await Teacher.findById(decoded.id).select("-password");
+    } else {
+      throw new AuthenticationError("Invalid user role");
+    }
+
+    if (!user) {
+      throw new AuthenticationError("Not authorized, user not found");
+    }
+
+    // Set user on request
+    req.user = user;
+    next();
   }
 );
 
@@ -88,34 +96,39 @@ export const protectAdmin = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     let token;
 
-    // Check for token in headers
-    if (
+    // Check for token in cookies first
+    if (req.cookies.accessToken) {
+      token = req.cookies.accessToken;
+    }
+    // Fallback to Authorization header for API clients
+    else if (
       req.headers.authorization &&
       req.headers.authorization.startsWith("Bearer")
     ) {
-      // Get token from header
       token = req.headers.authorization.split(" ")[1];
+    }
 
-      // Verify token
-      const decoded = verifyToken(token);
-
-      if (!decoded) {
-        throw new AuthenticationError("Not authorized, token invalid");
-      }
-
-      // Find admin by id
-      const admin = await Admin.findById(decoded.id).select("-password");
-
-      if (!admin) {
-        throw new AuthenticationError("Not authorized, admin not found");
-      }
-
-      // Set user on request
-      req.user = admin;
-      next();
-    } else {
+    if (!token) {
       throw new AuthenticationError("Not authorized, no token");
     }
+
+    // Verify token
+    const decoded = verifyToken(token);
+
+    if (!decoded) {
+      throw new AuthenticationError("Not authorized, token invalid");
+    }
+
+    // Find admin by id
+    const admin = await Admin.findById(decoded.id).select("-password");
+
+    if (!admin) {
+      throw new AuthenticationError("Not authorized, admin not found");
+    }
+
+    // Set user on request
+    req.user = admin;
+    next();
   }
 );
 
@@ -124,7 +137,8 @@ export const protectAdmin = asyncHandler(
  */
 export const verifyRefreshToken = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { refreshToken } = req.body;
+    // Get refresh token from cookies
+    const refreshToken = req.cookies.refreshToken;
 
     if (!refreshToken) {
       throw new BadRequestError("Refresh token is required");
@@ -150,7 +164,7 @@ export const verifyRefreshToken = asyncHandler(
     }
 
     // Verify token
-    const decoded = verifyToken(refreshToken);
+    const decoded = verifyToken(refreshToken, REFRESH_TOKEN_SECRET);
 
     if (!decoded) {
       throw new AuthenticationError("Not authorized, token invalid");

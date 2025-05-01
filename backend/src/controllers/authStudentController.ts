@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
-import mongoose from "mongoose";
-import { Student, RefreshToken } from "../models";
+import { Types } from "mongoose";
+import { Student } from "../models";
 import { UserRole } from "../constants";
 import {
   generateTokens,
@@ -9,6 +9,8 @@ import {
   refreshTokens,
   revokeRefreshToken,
   revokeAllUserTokens,
+  setTokenCookies,
+  clearTokenCookies,
 } from "../utils/tokenUtils";
 import { withTransaction } from "../utils/transactionUtils";
 import asyncHandler from "../utils/asyncHandler";
@@ -17,7 +19,6 @@ import {
   BadRequestError,
   NotFoundError,
 } from "../utils/customErrors";
-import { Types } from "mongoose";
 import {
   sendVerificationEmail,
   sendWelcomeEmail,
@@ -100,6 +101,9 @@ export const registerStudent = asyncHandler(
       // In production, you might want to handle this differently
     }
 
+    // Set tokens as HTTP-only cookies
+    setTokenCookies(res, result.tokens);
+
     res.status(201).json({
       success: true,
       data: {
@@ -110,7 +114,6 @@ export const registerStudent = asyncHandler(
         firstName: result.student.firstName,
         lastName: result.student.lastName,
         isVerified: result.student.isVerified,
-        ...result.tokens,
         // Don't send OTP in production
         ...(process.env.NODE_ENV === 'development' ? { otp } : {})
       },
@@ -153,37 +156,26 @@ export const loginStudent = asyncHandler(
       role: student.role,
     });
 
-    // Use a transaction to ensure the operation is atomic
-    const session = await mongoose.startSession();
-    try {
-      session.startTransaction();
-
+    // Use the transaction utility to handle the transaction
+    await withTransaction(async (session) => {
       // Save refresh token to database
       await saveRefreshToken(tokens.refreshToken, userId.toString(), false, session);
+    });
 
-      // Commit the transaction
-      await session.commitTransaction();
+    // Set tokens as HTTP-only cookies
+    setTokenCookies(res, tokens);
 
-      res.json({
-        success: true,
-        data: {
-          _id: student._id,
-          username: student.username,
-          email: student.email,
-          role: student.role,
-          firstName: student.firstName,
-          lastName: student.lastName,
-          ...tokens,
-        },
-      });
-    } catch (error) {
-      // Abort the transaction on error
-      await session.abortTransaction();
-      throw error;
-    } finally {
-      // End the session
-      session.endSession();
-    }
+    res.json({
+      success: true,
+      data: {
+        _id: student._id,
+        username: student.username,
+        email: student.email,
+        role: student.role,
+        firstName: student.firstName,
+        lastName: student.lastName,
+      },
+    });
   }
 );
 
@@ -193,7 +185,8 @@ export const loginStudent = asyncHandler(
  */
 export const refreshAccessToken = asyncHandler(
   async (req: Request, res: Response) => {
-    const { refreshToken } = req.body;
+    // Get refresh token from cookies
+    const refreshToken = req.cookies.refreshToken;
     if (!refreshToken) {
       throw new BadRequestError("Refresh token is required");
     }
@@ -221,9 +214,12 @@ export const refreshAccessToken = asyncHandler(
       await saveRefreshToken(newTokens.refreshToken, userId.toString(), false, session);
     });
 
+    // Set new tokens as HTTP-only cookies
+    setTokenCookies(res, newTokens);
+
     res.json({
       success: true,
-      data: newTokens,
+      message: "Token refreshed successfully",
     });
   }
 );
@@ -233,7 +229,8 @@ export const refreshAccessToken = asyncHandler(
  * @route POST /api/auth/students/logout
  */
 export const logout = asyncHandler(async (req: Request, res: Response) => {
-  const { refreshToken } = req.body;
+  // Get refresh token from cookies
+  const refreshToken = req.cookies.refreshToken;
 
   if (refreshToken) {
     // Use the transaction utility to handle the transaction
@@ -242,6 +239,9 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
       await revokeRefreshToken(refreshToken, session);
     });
   }
+
+  // Clear token cookies
+  clearTokenCookies(res);
 
   res.json({
     success: true,
@@ -266,6 +266,9 @@ export const logoutFromAllDevices = asyncHandler(
       // Revoke all refresh tokens for the student
       await revokeAllUserTokens(student._id.toString(), false, session);
     });
+
+    // Clear token cookies
+    clearTokenCookies(res);
 
     res.json({
       success: true,
