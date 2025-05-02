@@ -30,7 +30,6 @@ const AdminProfile = lazy(() => import('../pages/admin/Profile'));
 const TeacherDashboard = lazy(() => import('../pages/teacher/Dashboard'));
 const TeacherClasses = lazy(() => import('../pages/teacher/Classes'));
 const TeacherClassDetail = lazy(() => import('../pages/teacher/ClassDetail'));
-const TeacherClassStudents = lazy(() => import('../pages/teacher/ClassStudents'));
 const TeacherQuizzes = lazy(() => import('../pages/teacher/Quizzes'));
 const TeacherQuizDetail = lazy(() => import('../pages/teacher/QuizDetail'));
 const TeacherCreateQuiz = lazy(() => import('../pages/teacher/CreateQuiz'));
@@ -77,9 +76,9 @@ export const publicRoutes: RouteType[] = [
 
 // Protected routes that require verification
 export const verificationRoutes: RouteType[] = [
-  { 
-    path: ROUTES.VERIFY_EMAIL, 
-    component: VerifyEmail, 
+  {
+    path: ROUTES.VERIFY_EMAIL,
+    component: VerifyEmail,
     protected: true,
     requiresVerification: true,
     layout: 'auth'
@@ -103,7 +102,6 @@ export const teacherRoutes: RouteType[] = [
   { path: ROUTES.TEACHER.DASHBOARD, component: TeacherDashboard, protected: true, userType: 'teacher', layout: 'app' },
   { path: ROUTES.TEACHER.CLASSES, component: TeacherClasses, protected: true, userType: 'teacher', layout: 'app' },
   { path: ROUTES.TEACHER.CLASS_DETAIL, component: TeacherClassDetail, protected: true, userType: 'teacher', layout: 'app' },
-  { path: ROUTES.TEACHER.CLASS_STUDENTS, component: TeacherClassStudents, protected: true, userType: 'teacher', layout: 'app' },
   { path: ROUTES.TEACHER.QUIZZES, component: TeacherQuizzes, protected: true, userType: 'teacher', layout: 'app' },
   { path: ROUTES.TEACHER.QUIZ_DETAIL, component: TeacherQuizDetail, protected: true, userType: 'teacher', layout: 'app' },
   { path: ROUTES.TEACHER.CREATE_QUIZ, component: TeacherCreateQuiz, protected: true, userType: 'teacher', layout: 'app' },
@@ -145,7 +143,7 @@ export const routes: RouteType[] = [
   { path: '*', component: NotFound, layout: 'minimal' },
 ];
 
-/* 
+/*
 NOTE: The actual page components don't exist yet. When you start creating pages,
 you'll need to update the imports above to point to the correct files.
 
