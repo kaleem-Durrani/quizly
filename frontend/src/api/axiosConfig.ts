@@ -5,6 +5,7 @@ import axios, {
   InternalAxiosRequestConfig
 } from 'axios';
 import { AUTH_ENDPOINTS } from '../constants/api';
+import { handleApiError } from '../utils/errors';
 
 // Extend the InternalAxiosRequestConfig interface to include _retry property
 declare module 'axios' {
@@ -86,11 +87,12 @@ api.interceptors.response.use(
         // If refresh token is invalid, redirect to login
         localStorage.removeItem('userRole');
         window.location.href = '/login';
-        return Promise.reject(refreshError);
+        return Promise.reject(handleApiError(refreshError));
       }
     }
 
-    return Promise.reject(error);
+    // Convert the error to a custom error type
+    return Promise.reject(handleApiError(error));
   }
 );
 
