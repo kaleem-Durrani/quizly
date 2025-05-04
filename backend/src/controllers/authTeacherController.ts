@@ -58,7 +58,7 @@ export const loginTeacher = asyncHandler(
     // Use transaction to ensure both operations succeed or fail together
     await withTransaction(async (session) => {
       // Save refresh token to database
-      await saveRefreshToken(tokens.refreshToken, userId.toString(), false, session);
+      await saveRefreshToken(tokens.refreshToken, userId.toString(), UserRole.TEACHER, session);
 
       // Update last login
       teacher.lastLogin = new Date();
@@ -115,7 +115,7 @@ export const refreshAccessToken = asyncHandler(
       await revokeRefreshToken(refreshToken, session);
 
       // Save new refresh token
-      await saveRefreshToken(newTokens.refreshToken, userId.toString(), false, session);
+      await saveRefreshToken(newTokens.refreshToken, userId.toString(), UserRole.TEACHER, session);
     });
 
     // Set new tokens as HTTP-only cookies
@@ -168,7 +168,7 @@ export const logoutFromAllDevices = asyncHandler(
     // Use the transaction utility to handle the transaction
     await withTransaction(async (session) => {
       // Revoke all refresh tokens for the teacher
-      await revokeAllUserTokens(teacher._id.toString(), false, session);
+      await revokeAllUserTokens(teacher._id.toString(), UserRole.TEACHER, session);
     });
 
     // Clear token cookies

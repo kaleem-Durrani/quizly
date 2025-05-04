@@ -79,7 +79,7 @@ export const registerStudent = asyncHandler(
       });
 
       // Save refresh token to database
-      await saveRefreshToken(tokens.refreshToken, userId.toString(), false, session);
+      await saveRefreshToken(tokens.refreshToken, userId.toString(), UserRole.STUDENT, session);
 
       return {
         student: createdStudent,
@@ -159,7 +159,7 @@ export const loginStudent = asyncHandler(
     // Use the transaction utility to handle the transaction
     await withTransaction(async (session) => {
       // Save refresh token to database
-      await saveRefreshToken(tokens.refreshToken, userId.toString(), false, session);
+      await saveRefreshToken(tokens.refreshToken, userId.toString(), UserRole.STUDENT, session);
     });
 
     // Set tokens as HTTP-only cookies
@@ -211,7 +211,7 @@ export const refreshAccessToken = asyncHandler(
       await revokeRefreshToken(refreshToken, session);
 
       // Save new refresh token
-      await saveRefreshToken(newTokens.refreshToken, userId.toString(), false, session);
+      await saveRefreshToken(newTokens.refreshToken, userId.toString(), UserRole.STUDENT, session);
     });
 
     // Set new tokens as HTTP-only cookies
@@ -264,7 +264,7 @@ export const logoutFromAllDevices = asyncHandler(
     // Use the transaction utility to handle the transaction
     await withTransaction(async (session) => {
       // Revoke all refresh tokens for the student
-      await revokeAllUserTokens(student._id.toString(), false, session);
+      await revokeAllUserTokens(student._id.toString(), UserRole.STUDENT, session);
     });
 
     // Clear token cookies
@@ -497,7 +497,7 @@ export const resetPassword = asyncHandler(
 
       // Revoke all refresh tokens for the student for security
       const userId = student._id as Types.ObjectId;
-      await revokeAllUserTokens(userId.toString(), false, session);
+      await revokeAllUserTokens(userId.toString(), UserRole.STUDENT, session);
     });
 
     res.json({

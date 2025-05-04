@@ -13,7 +13,6 @@ const ACCESS_TOKEN_SECRET = process.env.JWT_ACCESS_SECRET || "access_secret";
 const REFRESH_TOKEN_SECRET = process.env.JWT_REFRESH_SECRET || "refresh_secret";
 
 // Get token expiration times from environment variables
-const ACCESS_TOKEN_EXPIRE = process.env.JWT_ACCESS_EXPIRE || "15m";
 const REFRESH_TOKEN_EXPIRE = process.env.JWT_REFRESH_EXPIRE || "7d";
 
 /**
@@ -116,24 +115,37 @@ export const calculateRefreshExpiration = (): number => {
  * Save refresh token to database
  * @param token Refresh token
  * @param userId User ID
- * @param isAdmin Whether the user is an admin
+ * @param userRole User role (admin, teacher, or student)
  * @param session Optional Mongoose session for transactions
  */
 export const saveRefreshToken = async (
   token: string,
   userId: string,
-  isAdmin: boolean = false,
+  userRole: UserRole | string,
   session?: mongoose.ClientSession
 ): Promise<void> => {
   // Calculate expiration time
   const expiresIn = calculateRefreshExpiration();
   const expiresAt = new Date(Date.now() + expiresIn * 1000);
 
+  // Map user role to userType
+  let userType: string;
+  if (userRole === UserRole.ADMIN) {
+    userType = "admin";
+  } else if (userRole === UserRole.TEACHER) {
+    userType = "teacher";
+  } else if (userRole === UserRole.STUDENT) {
+    userType = "student";
+  } else {
+    // Default to student if role is not recognized
+    userType = "student";
+  }
+
   // Create refresh token document
   const refreshTokenData = {
     token,
     userId,
-    userType: isAdmin ? "Admin" : "User",
+    userType,
     expiresAt,
   };
 
@@ -167,15 +179,26 @@ export const revokeRefreshToken = async (
 /**
  * Revoke all refresh tokens for a user
  * @param userId User ID
- * @param isAdmin Whether the user is an admin
+ * @param userRole User role (admin, teacher, or student)
  * @param session Optional Mongoose session for transactions
  */
 export const revokeAllUserTokens = async (
   userId: string,
-  isAdmin: boolean = false,
+  userRole: UserRole | string,
   session?: mongoose.ClientSession
 ): Promise<void> => {
-  const userType = isAdmin ? "Admin" : "User";
+  // Map user role to userType
+  let userType: string;
+  if (userRole === UserRole.ADMIN) {
+    userType = "admin";
+  } else if (userRole === UserRole.TEACHER) {
+    userType = "teacher";
+  } else if (userRole === UserRole.STUDENT) {
+    userType = "student";
+  } else {
+    // Default to student if role is not recognized
+    userType = "student";
+  }
 
   if (session) {
     await RefreshToken.updateMany(

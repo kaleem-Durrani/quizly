@@ -50,7 +50,7 @@ export const loginAdmin = asyncHandler(async (req: Request, res: Response) => {
   // Use the transaction utility to handle the transaction
   await withTransaction(async (session) => {
     // Save refresh token to database
-    await saveRefreshToken(tokens.refreshToken, adminId.toString(), true, session);
+    await saveRefreshToken(tokens.refreshToken, adminId.toString(), UserRole.ADMIN, session);
   });
 
   // Set tokens as HTTP-only cookies
@@ -99,7 +99,7 @@ export const refreshAccessToken = asyncHandler(
       await revokeRefreshToken(refreshToken, session);
 
       // Save new refresh token
-      await saveRefreshToken(newTokens.refreshToken, adminId.toString(), true, session);
+      await saveRefreshToken(newTokens.refreshToken, adminId.toString(), UserRole.ADMIN, session);
     });
 
     // Set new tokens as HTTP-only cookies
@@ -152,7 +152,7 @@ export const logoutFromAllDevices = asyncHandler(
     // Use the transaction utility to handle the transaction
     await withTransaction(async (session) => {
       // Revoke all refresh tokens for the admin
-      await revokeAllUserTokens(admin._id.toString(), true, session);
+      await revokeAllUserTokens(admin._id.toString(), UserRole.ADMIN, session);
     });
 
     // Clear token cookies
