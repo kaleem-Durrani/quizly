@@ -1,10 +1,11 @@
 import api from './axiosConfig';
-import { 
-  ADMIN_ENDPOINTS, 
-  ApiResponse, 
-  PaginatedResponse, 
-  User, 
-  Subject 
+import {
+  ADMIN_ENDPOINTS,
+  ApiResponse,
+  PaginatedResponse,
+  User,
+  Subject,
+  Quiz
 } from '../constants';
 
 /**
@@ -13,9 +14,45 @@ import {
  */
 
 /**
+ * Get admin dashboard data
+ * @returns Promise with dashboard statistics and recent activity
+ *
+ * @example
+ * // Get dashboard data
+ * const dashboard = await getDashboard();
+ * console.log('Teacher count:', dashboard.data.counts.teachers);
+ */
+export const getDashboard = async (): Promise<ApiResponse<{
+  counts: {
+    users: number;
+    quizzes: number;
+    submissions: number;
+    teachers: number;
+    students: number;
+    admins: number;
+  };
+  recentUsers: User[];
+  recentQuizzes: Quiz[];
+}>> => {
+  const response = await api.get<ApiResponse<{
+    counts: {
+      users: number;
+      quizzes: number;
+      submissions: number;
+      teachers: number;
+      students: number;
+      admins: number;
+    };
+    recentUsers: User[];
+    recentQuizzes: Quiz[];
+  }>>(ADMIN_ENDPOINTS.DASHBOARD);
+  return response.data;
+};
+
+/**
  * Get admin profile
  * @returns Promise with admin profile data
- * 
+ *
  * @example
  * // Get the current admin's profile
  * const profile = await getAdminProfile();
@@ -32,16 +69,16 @@ export const getAdminProfile = async (): Promise<ApiResponse<User>> => {
  * @param limit Number of items per page
  * @param search Optional search term
  * @returns Promise with paginated list of teachers
- * 
+ *
  * @example
  * // Get the first page of teachers with 10 items per page
  * const teachers = await getTeachers(1, 10);
- * 
+ *
  * // Search for teachers by name
  * const mathTeachers = await getTeachers(1, 10, "smith");
  */
 export const getTeachers = async (
-  page: number = 1, 
+  page: number = 1,
   limit: number = 10,
   search?: string
 ): Promise<PaginatedResponse<User>> => {
@@ -55,7 +92,7 @@ export const getTeachers = async (
  * Get a specific teacher by ID
  * @param teacherId ID of the teacher to retrieve
  * @returns Promise with teacher details
- * 
+ *
  * @example
  * // Get details for a specific teacher
  * const teacherDetails = await getTeacherById("teacher123");
@@ -69,7 +106,7 @@ export const getTeacherById = async (teacherId: string): Promise<ApiResponse<Use
  * Create a new teacher account
  * @param teacherData Teacher data including email, firstName, lastName
  * @returns Promise with created teacher data and temporary password
- * 
+ *
  * @example
  * // Create a new teacher account
  * const newTeacher = await createTeacher({
@@ -85,7 +122,7 @@ export const createTeacher = async (teacherData: {
   username?: string;
 }): Promise<ApiResponse<User & { temporaryPassword?: string }>> => {
   const response = await api.post<ApiResponse<User & { temporaryPassword?: string }>>(
-    ADMIN_ENDPOINTS.TEACHERS, 
+    ADMIN_ENDPOINTS.TEACHERS,
     teacherData
   );
   return response.data;
@@ -96,7 +133,7 @@ export const createTeacher = async (teacherData: {
  * @param teacherId ID of the teacher to update
  * @param teacherData Updated teacher data
  * @returns Promise with updated teacher data
- * 
+ *
  * @example
  * // Update a teacher's information
  * const updatedTeacher = await updateTeacher("teacher123", {
@@ -105,11 +142,11 @@ export const createTeacher = async (teacherData: {
  * });
  */
 export const updateTeacher = async (
-  teacherId: string, 
+  teacherId: string,
   teacherData: Partial<User>
 ): Promise<ApiResponse<User>> => {
   const response = await api.put<ApiResponse<User>>(
-    ADMIN_ENDPOINTS.TEACHER_DETAIL(teacherId), 
+    ADMIN_ENDPOINTS.TEACHER_DETAIL(teacherId),
     teacherData
   );
   return response.data;
@@ -119,7 +156,7 @@ export const updateTeacher = async (
  * Reset a teacher's password
  * @param teacherId ID of the teacher
  * @returns Promise with success message and temporary password
- * 
+ *
  * @example
  * // Reset a teacher's password
  * const result = await resetTeacherPassword("teacher123");
@@ -140,13 +177,13 @@ export const resetTeacherPassword = async (
  * @param limit Number of items per page
  * @param search Optional search term
  * @returns Promise with paginated list of students
- * 
+ *
  * @example
  * // Get the first page of students
  * const students = await getStudents(1, 10);
  */
 export const getStudents = async (
-  page: number = 1, 
+  page: number = 1,
   limit: number = 10,
   search?: string
 ): Promise<PaginatedResponse<User>> => {
@@ -160,7 +197,7 @@ export const getStudents = async (
  * Get a specific student by ID
  * @param studentId ID of the student to retrieve
  * @returns Promise with student details
- * 
+ *
  * @example
  * // Get details for a specific student
  * const studentDetails = await getStudentById("student123");
@@ -175,7 +212,7 @@ export const getStudentById = async (studentId: string): Promise<ApiResponse<Use
  * @param studentId ID of the student to update
  * @param studentData Updated student data
  * @returns Promise with updated student data
- * 
+ *
  * @example
  * // Update a student's information
  * const updatedStudent = await updateStudent("student123", {
@@ -184,11 +221,11 @@ export const getStudentById = async (studentId: string): Promise<ApiResponse<Use
  * });
  */
 export const updateStudent = async (
-  studentId: string, 
+  studentId: string,
   studentData: Partial<User>
 ): Promise<ApiResponse<User>> => {
   const response = await api.put<ApiResponse<User>>(
-    ADMIN_ENDPOINTS.STUDENT_DETAIL(studentId), 
+    ADMIN_ENDPOINTS.STUDENT_DETAIL(studentId),
     studentData
   );
   return response.data;
@@ -200,13 +237,13 @@ export const updateStudent = async (
  * @param limit Number of items per page
  * @param search Optional search term
  * @returns Promise with paginated list of subjects
- * 
+ *
  * @example
  * // Get all subjects
  * const subjects = await getSubjects(1, 10);
  */
 export const getSubjects = async (
-  page: number = 1, 
+  page: number = 1,
   limit: number = 10,
   search?: string
 ): Promise<PaginatedResponse<Subject>> => {
@@ -220,7 +257,7 @@ export const getSubjects = async (
  * Get a specific subject by ID
  * @param subjectId ID of the subject to retrieve
  * @returns Promise with subject details
- * 
+ *
  * @example
  * // Get details for a specific subject
  * const subjectDetails = await getSubjectById("subject123");
@@ -234,7 +271,7 @@ export const getSubjectById = async (subjectId: string): Promise<ApiResponse<Sub
  * Create a new subject
  * @param subjectData Subject data including name and optional description
  * @returns Promise with created subject data
- * 
+ *
  * @example
  * // Create a new subject
  * const newSubject = await createSubject({
@@ -255,7 +292,7 @@ export const createSubject = async (subjectData: {
  * @param subjectId ID of the subject to update
  * @param subjectData Updated subject data
  * @returns Promise with updated subject data
- * 
+ *
  * @example
  * // Update a subject
  * const updatedSubject = await updateSubject("subject123", {
@@ -264,11 +301,11 @@ export const createSubject = async (subjectData: {
  * });
  */
 export const updateSubject = async (
-  subjectId: string, 
+  subjectId: string,
   subjectData: Partial<Subject>
 ): Promise<ApiResponse<Subject>> => {
   const response = await api.put<ApiResponse<Subject>>(
-    ADMIN_ENDPOINTS.SUBJECT_DETAIL(subjectId), 
+    ADMIN_ENDPOINTS.SUBJECT_DETAIL(subjectId),
     subjectData
   );
   return response.data;
@@ -278,7 +315,7 @@ export const updateSubject = async (
  * Delete a subject
  * @param subjectId ID of the subject to delete
  * @returns Promise with success message
- * 
+ *
  * @example
  * // Delete a subject
  * const result = await deleteSubject("subject123");

@@ -70,6 +70,7 @@ export const TEACHER_ENDPOINTS = {
 // Admin endpoints
 export const ADMIN_ENDPOINTS = {
   PROFILE: `${API_BASE_URL}/admin/profile`,
+  DASHBOARD: `${API_BASE_URL}/admin/dashboard`,
   TEACHERS: `${API_BASE_URL}/admin/teachers`,
   TEACHER_DETAIL: (teacherId: string) => `${API_BASE_URL}/admin/teachers/${teacherId}`,
   STUDENTS: `${API_BASE_URL}/admin/students`,

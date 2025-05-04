@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getAdminProfile,
+  getDashboard,
   getTeachers,
   getTeacherById,
   createTeacher,
@@ -31,6 +32,15 @@ export const useAdminQuery = () => {
     queryKey: ['adminProfile'],
     queryFn: getAdminProfile,
     staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  /**
+   * Query to get admin dashboard data
+   */
+  const dashboardQuery = useQuery({
+    queryKey: ['adminDashboard'],
+    queryFn: getDashboard,
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
   /**
@@ -196,6 +206,7 @@ export const useAdminQuery = () => {
   return {
     // Queries
     profileQuery,
+    dashboardQuery,
     getTeachersQuery,
     getTeacherByIdQuery,
     getStudentsQuery,

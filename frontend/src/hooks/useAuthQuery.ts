@@ -1,15 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { 
-  checkAuthStatus, 
-  login as loginApi, 
+import {
+  checkAuthStatus,
+  login as loginApi,
   logout as logoutApi,
+  registerStudent as registerStudentApi,
   verifyEmail as verifyEmailApi,
   resendOTP as resendOTPApi,
   forgotPassword as forgotPasswordApi,
   resetPassword as resetPasswordApi,
   changeTeacherPassword as changeTeacherPasswordApi
 } from '../api/authApi';
-import { LoginRequest, UserRole } from '../constants/types';
+import { LoginRequest, RegisterStudentRequest, UserRole } from '../constants/types';
 
 /**
  * Custom hook for authentication-related queries and mutations
@@ -46,11 +47,11 @@ export const useAuthQuery = () => {
     mutationFn: (role: UserRole) => logoutApi(role),
     onSuccess: () => {
       // Clear user data from cache
-      queryClient.setQueryData(['authStatus'], { 
-        success: false, 
-        isAuthenticated: false 
+      queryClient.setQueryData(['authStatus'], {
+        success: false,
+        isAuthenticated: false
       });
-      
+
       // Invalidate all queries to force refetch when needed
       queryClient.invalidateQueries();
     },
@@ -60,7 +61,7 @@ export const useAuthQuery = () => {
    * Mutation for email verification
    */
   const verifyEmailMutation = useMutation({
-    mutationFn: ({ email, otp }: { email: string; otp: string }) => 
+    mutationFn: ({ email, otp }: { email: string; otp: string }) =>
       verifyEmailApi(email, otp),
     onSuccess: () => {
       // Invalidate auth status to update verification status
@@ -86,30 +87,38 @@ export const useAuthQuery = () => {
    * Mutation for reset password
    */
   const resetPasswordMutation = useMutation({
-    mutationFn: ({ email, otp, newPassword }: { 
-      email: string; 
-      otp: string; 
-      newPassword: string 
+    mutationFn: ({ email, otp, newPassword }: {
+      email: string;
+      otp: string;
+      newPassword: string
     }) => resetPasswordApi(email, otp, newPassword),
+  });
+
+  /**
+   * Mutation for student registration
+   */
+  const registerMutation = useMutation({
+    mutationFn: (registrationData: RegisterStudentRequest) => registerStudentApi(registrationData),
   });
 
   /**
    * Mutation for changing teacher password
    */
   const changePasswordMutation = useMutation({
-    mutationFn: ({ currentPassword, newPassword }: { 
-      currentPassword: string; 
-      newPassword: string 
+    mutationFn: ({ currentPassword, newPassword }: {
+      currentPassword: string;
+      newPassword: string
     }) => changeTeacherPasswordApi(currentPassword, newPassword),
   });
 
   return {
     // Queries
     authStatusQuery,
-    
+
     // Mutations
     loginMutation,
     logoutMutation,
+    registerMutation,
     verifyEmailMutation,
     resendOTPMutation,
     forgotPasswordMutation,
