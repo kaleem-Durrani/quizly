@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { 
+import {
   getTeacherProfile,
   updateTeacherProfile,
   getTeacherClasses,
@@ -10,9 +10,10 @@ import {
   getTeacherQuizzes,
   getTeacherQuizById,
   getQuizQuestions,
-  getQuizResults
+  getQuizResults,
+  createClass
 } from '../api/teacherApi';
-import { User, PaginationParams } from '../constants/types';
+import { User, PaginationParams, CreateClassRequest } from '../constants/types';
 
 /**
  * Custom hook for teacher-related queries and mutations
@@ -74,7 +75,7 @@ export const useTeacherQuery = () => {
    * Mutation for removing a student from a class
    */
   const removeStudentMutation = useMutation({
-    mutationFn: ({ classId, studentId }: { classId: string; studentId: string }) => 
+    mutationFn: ({ classId, studentId }: { classId: string; studentId: string }) =>
       removeStudentFromClass(classId, studentId),
     onSuccess: (_, variables) => {
       // Invalidate class students query to refetch data
@@ -132,6 +133,17 @@ export const useTeacherQuery = () => {
     enabled: !!quizId, // Only run if quizId is provided
   });
 
+  /**
+   * Mutation for creating a new class
+   */
+  const createClassMutation = useMutation({
+    mutationFn: (classData: CreateClassRequest) => createClass(classData),
+    onSuccess: () => {
+      // Invalidate classes query to refetch data
+      queryClient.invalidateQueries({ queryKey: ['teacherClasses'] });
+    },
+  });
+
   return {
     // Queries
     profileQuery,
@@ -142,9 +154,10 @@ export const useTeacherQuery = () => {
     getQuizByIdQuery,
     getQuizQuestionsQuery,
     getQuizResultsQuery,
-    
+
     // Mutations
     updateProfileMutation,
+    createClassMutation,
     removeStudentMutation,
     regenerateJoinCodeMutation,
   };

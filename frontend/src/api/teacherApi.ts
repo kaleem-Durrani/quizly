@@ -1,11 +1,12 @@
 import api from './axiosConfig';
-import { 
-  TEACHER_ENDPOINTS, 
-  ApiResponse, 
-  PaginatedResponse, 
-  User, 
-  Class, 
-  Quiz 
+import {
+  TEACHER_ENDPOINTS,
+  ApiResponse,
+  PaginatedResponse,
+  User,
+  Class,
+  Quiz,
+  CreateClassRequest
 } from '../constants';
 
 /**
@@ -16,7 +17,7 @@ import {
 /**
  * Get teacher profile
  * @returns Promise with teacher profile data
- * 
+ *
  * @example
  * // Get the current teacher's profile
  * const profile = await getTeacherProfile();
@@ -31,7 +32,7 @@ export const getTeacherProfile = async (): Promise<ApiResponse<User>> => {
  * Update teacher profile
  * @param data Profile data to update
  * @returns Promise with updated teacher profile
- * 
+ *
  * @example
  * // Update the teacher's first and last name
  * const updatedProfile = await updateTeacherProfile({
@@ -50,16 +51,16 @@ export const updateTeacherProfile = async (data: Partial<User>): Promise<ApiResp
  * @param limit Number of items per page
  * @param search Optional search term
  * @returns Promise with paginated list of classes
- * 
+ *
  * @example
  * // Get the first page of classes with 10 items per page
  * const classes = await getTeacherClasses(1, 10);
- * 
+ *
  * // Search for classes containing "math"
  * const mathClasses = await getTeacherClasses(1, 10, "math");
  */
 export const getTeacherClasses = async (
-  page: number = 1, 
+  page: number = 1,
   limit: number = 10,
   search?: string
 ): Promise<PaginatedResponse<Class>> => {
@@ -73,7 +74,7 @@ export const getTeacherClasses = async (
  * Get a specific class by ID
  * @param classId ID of the class to retrieve
  * @returns Promise with class details
- * 
+ *
  * @example
  * // Get details for a specific class
  * const classDetails = await getTeacherClassById("class123");
@@ -90,14 +91,14 @@ export const getTeacherClassById = async (classId: string): Promise<ApiResponse<
  * @param limit Number of items per page
  * @param search Optional search term
  * @returns Promise with paginated list of students
- * 
+ *
  * @example
  * // Get all students in a class
  * const students = await getClassStudents("class123", 1, 10);
  */
 export const getClassStudents = async (
   classId: string,
-  page: number = 1, 
+  page: number = 1,
   limit: number = 10,
   search?: string
 ): Promise<PaginatedResponse<User>> => {
@@ -112,13 +113,13 @@ export const getClassStudents = async (
  * @param classId ID of the class
  * @param studentId ID of the student to remove
  * @returns Promise with success message
- * 
+ *
  * @example
  * // Remove a student from a class
  * const result = await removeStudentFromClass("class123", "student456");
  */
 export const removeStudentFromClass = async (
-  classId: string, 
+  classId: string,
   studentId: string
 ): Promise<ApiResponse<null>> => {
   const response = await api.delete<ApiResponse<null>>(TEACHER_ENDPOINTS.REMOVE_STUDENT(classId, studentId));
@@ -129,7 +130,7 @@ export const removeStudentFromClass = async (
  * Regenerate join code for a class
  * @param classId ID of the class
  * @returns Promise with new join code
- * 
+ *
  * @example
  * // Generate a new join code for a class
  * const result = await regenerateJoinCode("class123");
@@ -148,13 +149,13 @@ export const regenerateJoinCode = async (classId: string): Promise<ApiResponse<{
  * @param limit Number of items per page
  * @param search Optional search term
  * @returns Promise with paginated list of quizzes
- * 
+ *
  * @example
  * // Get all quizzes created by the teacher
  * const quizzes = await getTeacherQuizzes(1, 10);
  */
 export const getTeacherQuizzes = async (
-  page: number = 1, 
+  page: number = 1,
   limit: number = 10,
   search?: string
 ): Promise<PaginatedResponse<Quiz>> => {
@@ -165,10 +166,27 @@ export const getTeacherQuizzes = async (
 };
 
 /**
+ * Create a new class
+ * @param classData Class data including name and optional description
+ * @returns Promise with created class data
+ *
+ * @example
+ * // Create a new class
+ * const newClass = await createClass({
+ *   name: 'Math 101',
+ *   description: 'Introduction to Mathematics'
+ * });
+ */
+export const createClass = async (classData: CreateClassRequest): Promise<ApiResponse<Class>> => {
+  const response = await api.post<ApiResponse<Class>>(TEACHER_ENDPOINTS.CLASSES, classData);
+  return response.data;
+};
+
+/**
  * Get a specific quiz by ID
  * @param quizId ID of the quiz to retrieve
  * @returns Promise with quiz details
- * 
+ *
  * @example
  * // Get details for a specific quiz
  * const quizDetails = await getTeacherQuizById("quiz123");
@@ -182,7 +200,7 @@ export const getTeacherQuizById = async (quizId: string): Promise<ApiResponse<Qu
  * Get all questions for a quiz
  * @param quizId ID of the quiz
  * @returns Promise with quiz questions
- * 
+ *
  * @example
  * // Get all questions for a quiz
  * const questions = await getQuizQuestions("quiz123");
@@ -198,7 +216,7 @@ export const getQuizQuestions = async (quizId: string): Promise<ApiResponse<any[
  * @param page Page number for pagination
  * @param limit Number of items per page
  * @returns Promise with quiz results
- * 
+ *
  * @example
  * // Get results for a quiz
  * const results = await getQuizResults("quiz123", 1, 10);
