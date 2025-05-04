@@ -80,5 +80,7 @@ export const errorHandler = (
     response.message = "Token expired";
   }
 
+  console.log(err);
+
   res.status(statusCode).json(response);
 };

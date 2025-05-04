@@ -33,6 +33,7 @@ const Register: React.FC = () => {
   const [form] = Form.useForm();
   const [currentStep, setCurrentStep] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [formData, setFormData] = useState<any>({});
   const navigate = useNavigate();
 
   // Use the auth query hook
@@ -73,8 +74,14 @@ const Register: React.FC = () => {
     setErrorMessage(null);
 
     try {
+      // Combine the stored form data with the final password data
+      const allFormData = { ...formData, ...values };
+      console.log("All form data:", allFormData);
+
       // Remove confirmPassword as it's not needed for the API
-      const { confirmPassword, ...registrationData } = values;
+      const { confirmPassword, ...registrationData } = allFormData;
+
+      console.log("Registration data:", registrationData);
 
       const response = await registerMutation.mutateAsync(registrationData);
 
@@ -101,7 +108,13 @@ const Register: React.FC = () => {
   const nextStep = () => {
     form
       .validateFields()
-      .then(() => {
+      .then((values) => {
+        // Store the current step's form data
+        const newFormData = { ...formData, ...values };
+        setFormData(newFormData);
+        console.log("Current form data:", newFormData);
+
+        // Move to the next step
         setCurrentStep(currentStep + 1);
       })
       .catch((error) => {
@@ -113,6 +126,12 @@ const Register: React.FC = () => {
   const prevStep = () => {
     setCurrentStep(currentStep - 1);
   };
+
+  // For debugging, log form values whenever they change
+  useEffect(() => {
+    const formValues = form.getFieldsValue();
+    console.log("Current form values:", formValues);
+  }, [form]);
 
   return (
     <div className="min-h-full flex items-center justify-center p-4 bg-gradient-primary">
@@ -156,6 +175,7 @@ const Register: React.FC = () => {
             layout="vertical"
             scrollToFirstError
             size="large"
+            initialValues={formData}
           >
             {/* Step 1: Account Information */}
             {currentStep === 0 && (
