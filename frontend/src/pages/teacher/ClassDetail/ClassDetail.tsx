@@ -1,295 +1,232 @@
 import React, { useState } from "react";
-import {
-  Typography,
-  Card,
-  Tabs,
-  Button,
-  Table,
-  Space,
-  Tag,
-  Modal,
-  message,
-  Input,
-} from "antd";
-import {
-  ArrowLeftOutlined,
-  ReloadOutlined,
-  PlusOutlined,
-  DeleteOutlined,
-  SearchOutlined,
-} from "@ant-design/icons";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { Typography, Card, Tabs, Button, Spin, message } from "antd";
+import { ArrowLeftOutlined } from "@ant-design/icons";
+import { useParams, useNavigate } from "react-router-dom";
 import { ROUTES } from "../../../constants/routes";
-import { generatePath } from "../../../constants/routes";
+import { useTeacherQuery } from "../../../hooks/useTeacherQuery";
+import { useQuizQuery } from "../../../hooks/useQuizQuery";
+
+// Import components
+import ClassHeader from "./components/ClassHeader";
+import StudentsTab from "./components/StudentsTab";
+import QuizzesTab from "./components/QuizzesTab";
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
-const { confirm } = Modal;
 
 /**
  * Teacher Class Detail page component
- * Displays detailed information about a class
+ * Displays detailed information about a class with tabs for students and quizzes
  */
 const ClassDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("students");
   const [regeneratingCode, setRegeneratingCode] = useState(false);
 
-  // Handle join code regeneration
-  const handleRegenerateJoinCode = () => {
-    confirm({
-      title: "Regenerate Join Code",
-      content:
-        "Are you sure you want to regenerate the join code? The old code will no longer work.",
-      onOk: async () => {
-        setRegeneratingCode(true);
-        try {
-          // API call would go here
-          message.success("Join code regenerated successfully");
-        } catch (error) {
-          console.error("Error regenerating join code:", error);
-          message.error("Failed to regenerate join code");
-        } finally {
-          setRegeneratingCode(false);
-        }
-      },
-    });
+  // Use the teacher query hooks
+  const {
+    getClassByIdQuery,
+    getClassStudentsQuery,
+    removeStudentMutation,
+    regenerateJoinCodeMutation,
+  } = useTeacherQuery();
+
+  // Get class data
+  const classQuery = getClassByIdQuery(id || "");
+  const classData = classQuery.data?.data;
+
+  // Get students data with pagination
+  const [studentParams, setStudentParams] = useState({
+    page: 1,
+    limit: 10,
+    search: "",
+  });
+  const studentsQuery = getClassStudentsQuery(id || "", studentParams);
+  const students = studentsQuery.data?.data || [];
+
+  // Get quizzes for this class
+  const [quizParams, setQuizParams] = useState({
+    page: 1,
+    limit: 10,
+    search: "",
+    classId: id,
+  });
+  const { getQuizzesQuery } = useQuizQuery();
+  const quizzesQuery = getQuizzesQuery(quizParams);
+  const quizzes = quizzesQuery.data?.data || [];
+
+  // Loading states
+  const isLoading =
+    classQuery.isLoading || studentsQuery.isLoading || quizzesQuery.isLoading;
+
+  /**
+   * Handle join code regeneration
+   */
+  const handleRegenerateJoinCode = async () => {
+    if (!id) return;
+
+    setRegeneratingCode(true);
+    try {
+      const response = await regenerateJoinCodeMutation.mutateAsync(id);
+
+      if (response.success) {
+        message.success("Join code regenerated successfully");
+      } else {
+        message.error(response.message || "Failed to regenerate join code");
+      }
+    } catch (error: any) {
+      console.error("Error regenerating join code:", error);
+      message.error(error.message || "Failed to regenerate join code");
+    } finally {
+      setRegeneratingCode(false);
+    }
   };
 
-  // Handle student removal
-  const handleRemoveStudent = (studentId: string, studentName: string) => {
-    confirm({
-      title: "Remove Student",
-      content: `Are you sure you want to remove ${studentName} from this class?`,
-      onOk: async () => {
-        setLoading(true);
-        try {
-          // API call would go here
-          message.success(`${studentName} has been removed from the class`);
-        } catch (error) {
-          console.error("Error removing student:", error);
-          message.error("Failed to remove student");
-        } finally {
-          setLoading(false);
-        }
-      },
-    });
+  /**
+   * Handle student removal
+   */
+  const handleRemoveStudent = async (studentId: string) => {
+    if (!id) return;
+
+    try {
+      const response = await removeStudentMutation.mutateAsync({
+        classId: id,
+        studentId,
+      });
+
+      if (response.success) {
+        return Promise.resolve();
+      } else {
+        return Promise.reject(
+          new Error(response.message || "Failed to remove student")
+        );
+      }
+    } catch (error) {
+      return Promise.reject(error);
+    }
   };
 
-  // Student columns for the table
-  const studentColumns = [
-    {
-      title: "Name",
-      key: "name",
-      render: (record: any) => `${record.firstName} ${record.lastName}`,
-    },
-    {
-      title: "Email",
-      dataIndex: "email",
-      key: "email",
-    },
-    {
-      title: "Username",
-      dataIndex: "username",
-      key: "username",
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      render: (record: any) => (
-        <Button
-          icon={<DeleteOutlined />}
-          danger
-          size="small"
-          onClick={() =>
-            handleRemoveStudent(
-              record.id,
-              `${record.firstName} ${record.lastName}`
-            )
-          }
-        >
-          Remove
-        </Button>
-      ),
-    },
-  ];
-
-  // Quiz columns for the table
-  const quizColumns = [
-    {
-      title: "Title",
-      dataIndex: "title",
-      key: "title",
-      render: (_: any, record: any) => (
-        <Link to={generatePath(ROUTES.TEACHER.QUIZ_DETAIL, { id: record.id })}>
-          {record.title}
-        </Link>
-      ),
-    },
-    {
-      title: "Subject",
-      dataIndex: "subject",
-      key: "subject",
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      render: (status: string) => {
-        let color = "default";
-        if (status === "published") color = "green";
-        if (status === "draft") color = "orange";
-        return <Tag color={color}>{status.toUpperCase()}</Tag>;
-      },
-    },
-    {
-      title: "Created At",
-      dataIndex: "createdAt",
-      key: "createdAt",
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      render: (_: any, record: any) => (
-        <Space size="small">
-          <Link
-            to={generatePath(ROUTES.TEACHER.QUIZ_DETAIL, { id: record.id })}
+  // If class is not found, show a message
+  if (classQuery.isError) {
+    return (
+      <div className="p-6">
+        <div className="flex items-center mb-6">
+          <Button
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate(ROUTES.TEACHER.CLASSES)}
+            className="mr-4"
+            size="large"
           >
-            <Button size="small">View</Button>
-          </Link>
-          <Link
-            to={generatePath(ROUTES.TEACHER.QUIZ_RESULTS, { id: record.id })}
-          >
-            <Button size="small">Results</Button>
-          </Link>
-        </Space>
-      ),
-    },
-  ];
+            Back to Classes
+          </Button>
+          <Title level={2} className="m-0">
+            Class Not Found
+          </Title>
+        </div>
 
-  // State for student search
-  const [studentSearchText, setStudentSearchText] = useState("");
-
-  // Sample data (will be replaced with API data)
-  const classData = {
-    name: "Loading...",
-    description: "",
-    joinCode: "XXXXXX",
-    createdAt: "",
-  };
-  const students: any[] = [];
-  const quizzes: any[] = [];
-
-  // Filter students based on search text
-  const filteredStudents = students.filter(
-    (student) =>
-      student.firstName
-        ?.toLowerCase()
-        .includes(studentSearchText.toLowerCase()) ||
-      student.lastName
-        ?.toLowerCase()
-        .includes(studentSearchText.toLowerCase()) ||
-      student.email?.toLowerCase().includes(studentSearchText.toLowerCase()) ||
-      student.username?.toLowerCase().includes(studentSearchText.toLowerCase())
-  );
+        <Card className="shadow-sm text-center py-8">
+          <Text type="danger">
+            The class you're looking for doesn't exist or you don't have
+            permission to view it.
+          </Text>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <div className="flex items-center mb-4">
+    <div className="p-6">
+      {/* Page Header */}
+      <div className="flex items-center mb-6">
         <Button
           icon={<ArrowLeftOutlined />}
           onClick={() => navigate(ROUTES.TEACHER.CLASSES)}
           className="mr-4"
+          size="large"
         >
           Back to Classes
         </Button>
-        <Title level={2} className="m-0">
-          {classData.name}
-        </Title>
+        <div>
+          <Title level={2} className="m-0">
+            {isLoading ? "Loading..." : classData?.name}
+          </Title>
+          <Text type="secondary">Manage your class, students, and quizzes</Text>
+        </div>
       </div>
 
-      <Card className="mb-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <div className="mb-2">
-              <Text strong>Join Code: </Text>
-              <Tag color="blue" className="text-lg">
-                {classData.joinCode}
-              </Tag>
-              <Button
-                icon={<ReloadOutlined />}
-                size="small"
-                className="ml-2"
-                onClick={handleRegenerateJoinCode}
-                loading={regeneratingCode}
-              >
-                Regenerate
-              </Button>
-            </div>
-            <div>
-              <Text strong>Description: </Text>
-              <Text>{classData.description || "No description"}</Text>
-            </div>
-          </div>
-          <Link to={generatePath(ROUTES.TEACHER.EDIT_CLASS, { id: id || "" })}>
-            <Button type="primary">Edit Class</Button>
-          </Link>
+      {isLoading ? (
+        <div className="text-center py-12">
+          <Spin size="large" />
+          <div className="mt-4 text-gray-500">Loading class data...</div>
         </div>
-      </Card>
+      ) : classData ? (
+        <>
+          {/* Class Header with Join Code */}
+          <ClassHeader
+            classData={classData}
+            regenerateJoinCode={handleRegenerateJoinCode}
+            regeneratingCode={regeneratingCode}
+          />
 
-      <Card>
-        <Tabs defaultActiveKey="students">
-          <TabPane tab="Students" key="students">
-            <div className="flex justify-between mb-4">
-              <Text>Total Students: {students.length}</Text>
-              {/* Note: In a real implementation, we would add a component here to invite students by email */}
-            </div>
+          {/* Tabs for Students and Quizzes */}
+          <Card className="shadow-sm">
+            <Tabs
+              defaultActiveKey="students"
+              activeKey={activeTab}
+              onChange={setActiveTab}
+              size="large"
+              className="class-detail-tabs"
+            >
+              {/* Students Tab */}
+              <TabPane
+                tab={
+                  <span className="px-2">
+                    <span className="text-blue-500 font-medium mr-2">
+                      {students.length}
+                    </span>
+                    Students
+                  </span>
+                }
+                key="students"
+              >
+                <StudentsTab
+                  students={students}
+                  loading={
+                    studentsQuery.isLoading || removeStudentMutation.isPending
+                  }
+                  removeStudent={handleRemoveStudent}
+                />
+              </TabPane>
 
-            <div className="mb-4">
-              <Input
-                placeholder="Search students..."
-                prefix={<SearchOutlined />}
-                value={studentSearchText}
-                onChange={(e) => setStudentSearchText(e.target.value)}
-                allowClear
-              />
-            </div>
-
-            <Table
-              columns={studentColumns}
-              dataSource={filteredStudents}
-              rowKey="id"
-              loading={loading}
-              pagination={{
-                defaultPageSize: 10,
-                showSizeChanger: true,
-              }}
-            />
-          </TabPane>
-
-          <TabPane tab="Quizzes" key="quizzes">
-            <div className="flex justify-between mb-4">
-              <Text>Total Quizzes: {quizzes.length}</Text>
-              <Link to={ROUTES.TEACHER.CREATE_QUIZ}>
-                <Button type="primary" icon={<PlusOutlined />}>
-                  Create Quiz
-                </Button>
-              </Link>
-            </div>
-            <Table
-              columns={quizColumns}
-              dataSource={quizzes}
-              rowKey="id"
-              loading={loading}
-              pagination={{
-                defaultPageSize: 10,
-                showSizeChanger: true,
-              }}
-            />
-          </TabPane>
-        </Tabs>
-      </Card>
+              {/* Quizzes Tab */}
+              <TabPane
+                tab={
+                  <span className="px-2">
+                    <span className="text-green-500 font-medium mr-2">
+                      {quizzes.length}
+                    </span>
+                    Quizzes
+                  </span>
+                }
+                key="quizzes"
+              >
+                <QuizzesTab
+                  quizzes={quizzes}
+                  loading={quizzesQuery.isLoading}
+                  classId={id || ""}
+                />
+              </TabPane>
+            </Tabs>
+          </Card>
+        </>
+      ) : (
+        <Card className="shadow-sm text-center py-8">
+          <Text type="danger">
+            Failed to load class data. Please try again later.
+          </Text>
+        </Card>
+      )}
     </div>
   );
 };

@@ -49,7 +49,7 @@ const ForgotPassword: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-primary">
+    <div className="min-h-full flex items-center justify-center p-4 bg-gradient-primary">
       <div className="relative w-full max-w-md">
         {/* Glassmorphism effect */}
         <div className="absolute -inset-1 bg-gradient-accent rounded-2xl blur-lg opacity-50"></div>

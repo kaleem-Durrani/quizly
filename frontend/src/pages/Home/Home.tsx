@@ -52,7 +52,7 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-50">
+    <div className="min-h-screen w-full bg-gradient-to-b from-blue-50 to-indigo-50">
       {/* Fixed Navigation */}
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
