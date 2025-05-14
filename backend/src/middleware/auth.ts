@@ -172,11 +172,11 @@ export const verifyRefreshToken = asyncHandler(
 
     // Check if user exists based on userType
     let user;
-    if (storedToken.userType === "Admin") {
+    if (storedToken.userType === "admin") {
       user = await Admin.findById(decoded.id).select("-password");
-    } else if (decoded.role === UserRole.STUDENT) {
+    } else if (storedToken.userType === "student") {
       user = await Student.findById(decoded.id).select("-password");
-    } else if (decoded.role === UserRole.TEACHER) {
+    } else if (storedToken.userType === "teacher") {
       user = await Teacher.findById(decoded.id).select("-password");
     } else {
       throw new NotFoundError("Invalid user type");

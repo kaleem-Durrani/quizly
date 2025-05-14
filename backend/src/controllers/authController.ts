@@ -33,6 +33,7 @@ export const checkAuthStatus = asyncHandler(
         role: user.role,
         firstName: user.firstName,
         lastName: user.lastName,
+        ...(user.role === UserRole.STUDENT ? { isVerified: user.isVerified } : {}),
         // Include role-specific properties
         ...(user.role === UserRole.TEACHER ? { isFirstLogin: user.isFirstLogin } : {}),
         ...(user.role === UserRole.ADMIN ? { permissions: user.permissions } : {}),

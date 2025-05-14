@@ -15,7 +15,7 @@ import { useAuthQuery } from "../../hooks/useAuthQuery";
 import { ROUTES } from "../../constants/routes";
 import { UserRole } from "../../constants/types";
 
-const { Title, Text, Link: AntLink } = Typography;
+const { Title, Text } = Typography;
 
 /**
  * Login page component
@@ -79,7 +79,21 @@ const Login = () => {
       }
     } catch (error: any) {
       console.error("Login error:", error);
-      setErrorMessage(error.message || "Login failed. Please try again.");
+
+      // Handle specific error messages
+      if (error.message.includes("Invalid credentials")) {
+        setErrorMessage("Invalid email or password. Please try again.");
+      } else if (error.message.includes("Email not verified")) {
+        setErrorMessage(
+          "Your email is not verified. Please check your email for verification instructions."
+        );
+      } else if (error.message.includes("Student not found")) {
+        setErrorMessage(
+          "No account found with this email. Please check your email or register."
+        );
+      } else {
+        setErrorMessage(error.message || "Login failed. Please try again.");
+      }
     }
   };
 

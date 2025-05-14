@@ -10,8 +10,9 @@ import { AuthLayout, AppLayout, MinimalLayout } from "../layouts";
  * Displayed while lazy-loaded components are being loaded
  */
 const Loading = () => (
-  <div className="min-h-screen flex items-center justify-center bg-gray-100">
-    <Spin size="large" tip="Loading..." />
+  <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
+    <Spin size="large" />
+    <div className="mt-4">Loading...</div>
   </div>
 );
 

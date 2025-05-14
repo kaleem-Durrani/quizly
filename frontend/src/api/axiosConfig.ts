@@ -60,16 +60,24 @@ api.interceptors.response.use(
     const originalRequest = error.config as InternalAxiosRequestConfig;
 
     // If error is 401 (Unauthorized) and we haven't tried to refresh the token yet
+    // Only attempt refresh for non-login/register routes
     if (
       error.response?.status === 401 &&
       originalRequest &&
-      !originalRequest._retry
+      !originalRequest._retry &&
+      !originalRequest.url?.includes('/login') &&
+      !originalRequest.url?.includes('/register')
     ) {
+      // Only attempt refresh if we have a user role stored (meaning we were logged in)
+      const userRole = localStorage.getItem('userRole');
+      if (!userRole) {
+        return Promise.reject(handleApiError(error));
+      }
+
       originalRequest._retry = true;
 
       try {
-        // Determine the refresh endpoint based on the current path or stored user role
-        const userRole = localStorage.getItem('userRole') || '';
+        // Determine the refresh endpoint based on the stored user role
         let refreshEndpoint = AUTH_ENDPOINTS.STUDENT_REFRESH;
 
         if (userRole === 'admin') {
@@ -84,9 +92,9 @@ api.interceptors.response.use(
         // Retry the original request
         return api(originalRequest);
       } catch (refreshError) {
-        // If refresh token is invalid, redirect to login
+        // If refresh token is invalid, clear user role but don't redirect
+        // Let the auth context handle the redirect
         localStorage.removeItem('userRole');
-        window.location.href = '/login';
         return Promise.reject(handleApiError(refreshError));
       }
     }

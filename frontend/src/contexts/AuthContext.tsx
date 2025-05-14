@@ -41,7 +41,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Use the auth query hook
-  const { authStatusQuery } = useAuthQuery();
+  const authQueryHook = useAuthQuery();
+  const { authStatusQuery } = authQueryHook;
 
   /**
    * Check authentication status
@@ -93,8 +94,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
 
     try {
-      // Use the login mutation from useAuthQuery
-      const { loginMutation } = useAuthQuery();
+      // Use the login mutation from the hook instance
+      const { loginMutation } = authQueryHook;
+
       const response = await loginMutation.mutateAsync({
         email,
         password,
@@ -123,9 +125,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
    */
   const logoutUser = async (): Promise<void> => {
     try {
-      // Use the logout mutation from useAuthQuery
-      const { logoutMutation } = useAuthQuery();
+      // Get the current role before logging out
       const role = user?.role || localStorage.getItem("userRole") || "student";
+
+      // Create a local instance of the logout mutation
+      const { logoutMutation } = authQueryHook;
+
+      // Call the logout API
       await logoutMutation.mutateAsync(role as UserRole);
 
       // Clear auth state regardless of API response
